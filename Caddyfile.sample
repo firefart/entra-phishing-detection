@@ -14,7 +14,7 @@
   respond "OK" 200
 }
 
-:8000 {
+:8888 {
   log
 
   reverse_proxy entra:8000

@@ -17,7 +17,7 @@ services:
     hostname: caddy
     restart: unless-stopped
     ports:
-      - "${WEB_LISTEN:-0.0.0.0:8000}:8000"
+      - "${WEB_LISTEN:-0.0.0.0:8000}:8888"
     configs:
       - source: caddyfile
         target: /etc/caddy/Caddyfile
