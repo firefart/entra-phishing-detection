@@ -1,0 +1,78 @@
+version: "3"
+
+vars:
+  PROGRAM: entra-phishing-detection
+
+tasks:
+  deps:
+    cmds:
+      - go mod tidy -v
+
+  update:
+    deps: [generate]
+    cmds:
+      - go get -u
+      - go get -u tool
+      - go mod tidy -v
+
+  generate:
+    deps: [templ]
+
+  templ:
+    cmds:
+      - go tool templ generate
+
+  build:
+    aliases: [default]
+    deps: [deps, generate]
+    env:
+      CGO_ENABLED: 0
+    cmds:
+      - go fmt ./...
+      - go tool gofumpt -l -w .
+      - go tool templ fmt .
+      - go vet ./...
+      - go build -o {{.PROGRAM}}
+
+  test:
+    deps: [deps, generate]
+    env:
+      CGO_ENABLED: 1
+    cmds:
+      - go test -race -cover ./...
+
+  run:
+    deps: [build]
+    cmds:
+      - ./{{.PROGRAM}} -debug -config config.json
+
+  dev:
+    deps: [build]
+    cmds:
+      - go tool air
+
+  configcheck:
+    deps: [build]
+    cmds:
+      - ./{{.PROGRAM}} -configcheck -config config.json
+
+  lint:
+    cmds:
+      - golangci-lint run ./... --timeout=30m
+      - go mod tidy
+
+  lint-update:
+    cmds:
+      - curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b {{ .GOPATH }}/bin
+      - golangci-lint --version
+    vars:
+      GOPATH:
+        sh: go env GOPATH
+
+  tag:
+    cmds:
+      - git tag -a "${TAG}" -m "${TAG}"
+      - git push origin "${TAG}"
+    preconditions:
+      - sh: '[[ -n "${TAG}" ]]'
+        msg: "Please set the TAG environment variable"

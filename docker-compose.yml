@@ -1,0 +1,52 @@
+services:
+  entra:
+    image: firefart/entra-phishing-detection:latest
+    build:
+      context: .
+    command: "-config /app/config.json -json -listen :8000"
+    hostname: entra
+    configs:
+      - source: entra
+        target: /app/config.json
+    restart: unless-stopped
+    networks:
+      - net
+
+  caddy:
+    image: caddy:latest
+    hostname: caddy
+    restart: unless-stopped
+    ports:
+      - "${WEB_LISTEN:-0.0.0.0:8000}:8000"
+    configs:
+      - source: caddyfile
+        target: /etc/caddy/Caddyfile
+    volumes:
+      - ./certs/:/certs/:ro
+      - /etc/localtime:/etc/localtime:ro
+      - vol_caddy_data:/data
+      - vol_caddy_config:/config
+    healthcheck:
+      test: ["CMD", "wget", "-O", "-", "-q", "http://127.0.0.1:1337/"]
+      interval: 10s
+      timeout: 10s
+      retries: 3
+    depends_on:
+      entra:
+        condition: service_healthy
+        restart: true
+    networks:
+      - net
+
+configs:
+  caddyfile:
+    file: ./Caddyfile
+  entra:
+    file: ./config.json
+
+networks:
+  net:
+
+volumes:
+  vol_caddy_data:
+  vol_caddy_config:

@@ -1,0 +1,12 @@
+{
+  "server": {
+    "graceful_timeout": "5s",
+    "secret_key_header_name": "X-Secret-Key-Header",
+    "secret_key_header_value": "SECRET",
+    "ip_header": "CF-Connecting-IP"
+  },
+  "timeout": "5s",
+  "allowed_origins": [
+    "login.microsoftonline.com"
+  ]
+}
