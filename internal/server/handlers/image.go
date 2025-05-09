@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"net/url"
 	"slices"
+	"strings"
 
 	"github.com/firefart/entra-phishing-detection/internal/config"
 	"github.com/firefart/entra-phishing-detection/internal/server/middleware"
@@ -28,11 +29,13 @@ func (h *ImageHandler) phishingAttempt(w http.ResponseWriter, r *http.Request, r
 	if !ok {
 		ip = r.RemoteAddr
 	}
-	h.logger.With(
-		slog.String("remote_ip", ip),
-		slog.String("user_agent", r.Header.Get("User-Agent")),
-		slog.String("referer", r.Header.Get("Referer")),
-	).Warn("phishing attempt detected", slog.String("reason", reason))
+	header := make([]any, len(r.Header))
+	i := 0
+	for k, v := range r.Header {
+		header[i] = slog.String(k, strings.Join(v, ", "))
+		i++
+	}
+	h.logger.With(slog.String("reason", reason), slog.String("remote_ip", ip)).Warn("phishing attempt detected", header...)
 
 	w.WriteHeader(http.StatusOK)
 	return templates.ImageNOK().Render(r.Context(), w)
