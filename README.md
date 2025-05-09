@@ -58,7 +58,7 @@ Use `--help` to show all available flags and default values
 
 ```text
 WEB_LISTEN=127.0.0.1:8000
-HEALTHCHECK=http://localhost:8000/health
+HEALTHCHECK=http://localhost:8000/health_path
 ```
 
 | Value       | Description                                                                                                                                 |
