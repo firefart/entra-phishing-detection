@@ -24,8 +24,12 @@ func NewImageHandler(c config.Configuration, logger *slog.Logger) *ImageHandler 
 }
 
 func (h *ImageHandler) phishingAttempt(w http.ResponseWriter, r *http.Request, reason string) error {
+	ip, ok := r.Context().Value(middleware.ContextKeyIP).(string)
+	if !ok {
+		ip = r.RemoteAddr
+	}
 	h.logger.With(
-		slog.String("remote_ip", r.Context().Value(middleware.ContextKeyIP).(string)),
+		slog.String("remote_ip", ip),
 		slog.String("user_agent", r.Header.Get("User-Agent")),
 		slog.String("referer", r.Header.Get("Referer")),
 	).Warn("phishing attempt detected", slog.String("reason", reason))
