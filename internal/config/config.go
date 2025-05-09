@@ -25,6 +25,9 @@ type Server struct {
 	SecretKeyHeaderName  string        `koanf:"secret_key_header_name" validate:"required"`
 	SecretKeyHeaderValue string        `koanf:"secret_key_header_value" validate:"required"`
 	IPHeader             string        `koanf:"ip_header"`
+	PathImage            string        `koanf:"path_image"`
+	PathHealth           string        `koanf:"path_health"`
+	PathVersion          string        `koanf:"path_version"`
 }
 
 var defaultConfig = Configuration{

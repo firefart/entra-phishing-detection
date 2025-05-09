@@ -7,6 +7,7 @@ import (
 	"slices"
 
 	"github.com/firefart/entra-phishing-detection/internal/config"
+	"github.com/firefart/entra-phishing-detection/internal/server/middleware"
 	"github.com/firefart/entra-phishing-detection/internal/server/templates"
 )
 
@@ -22,21 +23,9 @@ func NewImageHandler(c config.Configuration, logger *slog.Logger) *ImageHandler 
 	}
 }
 
-func (h *ImageHandler) getRealIP(r *http.Request) string {
-	if h.config.Server.IPHeader == "" {
-		return r.RemoteAddr
-	}
-
-	realIP := r.Header.Get(h.config.Server.IPHeader)
-	if realIP == "" {
-		realIP = r.RemoteAddr
-	}
-	return realIP
-}
-
 func (h *ImageHandler) phishingAttempt(w http.ResponseWriter, r *http.Request, reason string) error {
 	h.logger.With(
-		slog.String("remote_ip", h.getRealIP(r)),
+		slog.String("remote_ip", r.Context().Value(middleware.ContextKeyIP).(string)),
 		slog.String("user_agent", r.Header.Get("User-Agent")),
 		slog.String("referer", r.Header.Get("Referer")),
 	).Warn("phishing attempt detected", slog.String("reason", reason))

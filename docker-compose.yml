@@ -5,6 +5,12 @@ services:
       context: .
     command: "-config /app/config.json -json -listen :8000"
     hostname: entra
+    healthcheck:
+      test: curl -f -sS ${HEALTHCHECK:-http://localhost:8000/health} || exit 1
+      interval: 5s
+      timeout: 10s
+      start_period: 5s
+      retries: 3
     configs:
       - source: entra
         target: /app/config.json

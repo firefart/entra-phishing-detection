@@ -37,7 +37,7 @@ func SecretKeyHeader(config SecretKeyHeaderConfig, next http.Handler) http.Handl
 		headerVal := r.Header.Get(config.SecretKeyHeaderName)
 		// no header set
 		if headerVal == "" {
-			config.Logger.Error("url called without secret header", slog.String("url", r.URL.String()))
+			config.Logger.Error("url called without secret header", slog.String("url", r.URL.String()), slog.String("ip", r.Context().Value(ContextKeyIP).(string)))
 			w.WriteHeader(http.StatusOK)
 			fmt.Fprint(w, "")
 			return
@@ -48,7 +48,7 @@ func SecretKeyHeader(config SecretKeyHeaderConfig, next http.Handler) http.Handl
 			return
 		}
 
-		config.Logger.Error("url called with wrong secret header", slog.String("header", headerVal))
+		config.Logger.Error("url called with wrong secret header", slog.String("header", headerVal), slog.String("ip", r.Context().Value(ContextKeyIP).(string)))
 		w.WriteHeader(http.StatusOK)
 		fmt.Fprint(w, "")
 	})

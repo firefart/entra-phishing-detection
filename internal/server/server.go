@@ -53,11 +53,26 @@ func NewServer(opts ...OptionsServerFunc) http.Handler {
 	mux := http.NewServeMux()
 
 	// image generation route
-	mux.HandleFunc("GET /30ce6ec8-1ca0-4dee-a4b0-b56fd4adf731", s.customHandler(handlers.NewImageHandler(s.config, s.logger).Handler))
+	imageRoute := "image"
+	if s.config.Server.PathImage != "" {
+		imageRoute = s.config.Server.PathImage
+	}
+	s.logger.Info("image route", slog.String("route", imageRoute))
+	mux.HandleFunc(fmt.Sprintf("GET /%s", imageRoute), middleware.RealIP(s.config.Server.IPHeader, s.customHandler(handlers.NewImageHandler(s.config, s.logger).Handler)))
 	// health check for monitoring
-	mux.HandleFunc("GET /10282d45-484d-4e18-8d55-40d38e82c39b/health", handlers.NewHealthHandler().Handler)
+	healthRoute := "health"
+	if s.config.Server.PathHealth != "" {
+		healthRoute = s.config.Server.PathHealth
+	}
+	s.logger.Info("health route", slog.String("route", healthRoute))
+	mux.HandleFunc(fmt.Sprintf("GET /%s", healthRoute), handlers.NewHealthHandler().Handler)
 	// version info
-	mux.HandleFunc("GET /d7cf1d1d-d4ba-49a0-8ff7-565c685c047a/version", middleware.SecretKeyHeader(secretKeyHeaderMW, s.customHandler(handlers.NewVersionHandler().Handler)))
+	versionRoute := "version"
+	if s.config.Server.PathVersion != "" {
+		versionRoute = s.config.Server.PathVersion
+	}
+	s.logger.Info("version route", slog.String("route", versionRoute))
+	mux.HandleFunc(fmt.Sprintf("GET /%s", versionRoute), middleware.RealIP(s.config.Server.IPHeader, middleware.SecretKeyHeader(secretKeyHeaderMW, s.customHandler(handlers.NewVersionHandler().Handler))))
 	// custom 404 for the rest
 	mux.HandleFunc("/", notFound)
 
