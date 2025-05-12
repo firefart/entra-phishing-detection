@@ -31,6 +31,8 @@ tasks:
       - go fmt ./...
       - go tool gofumpt -l -w .
       - go tool templ fmt .
+      - caddy fmt -w Caddyfile.sample
+      - caddy fmt -w Caddyfile
       - go vet ./...
       - go build -o {{.PROGRAM}}
 
