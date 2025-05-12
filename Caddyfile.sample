@@ -2,7 +2,7 @@
 	# debug
 	admin off
 	auto_https off
-  servers {
+	servers {
 		trusted_proxies static private_ranges
 		client_ip_headers CF-Connecting-IP
 		trusted_proxies_strict
@@ -11,11 +11,11 @@
 
 # healthchecks
 :1337 {
-  respond "OK" 200
+	respond "OK" 200
 }
 
 :8888 {
-  log
+	log
 
-  reverse_proxy entra:8000
+	reverse_proxy entra:8000
 }
