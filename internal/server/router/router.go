@@ -11,16 +11,16 @@ import (
 type HandlerFunc func(http.ResponseWriter, *http.Request) error
 
 type Router struct {
-	globalChain []func(http.Handler) http.Handler
-	routeChain  []func(http.Handler) http.Handler
-	isSubRouter bool
-	*http.ServeMux
+	globalChain  []func(http.Handler) http.Handler
+	routeChain   []func(http.Handler) http.Handler
+	isSubRouter  bool
+	mux          *http.ServeMux
 	errorHandler func(http.ResponseWriter, *http.Request, error)
 }
 
 func New() *Router {
 	return &Router{
-		ServeMux:     http.NewServeMux(),
+		mux:          http.NewServeMux(),
 		errorHandler: defaultErrorHandler,
 	}
 }
@@ -47,7 +47,7 @@ func (r *Router) Use(mw ...func(http.Handler) http.Handler) {
 }
 
 func (r *Router) Group(fn func(r *Router)) {
-	subRouter := &Router{routeChain: slices.Clone(r.routeChain), isSubRouter: true, ServeMux: r.ServeMux}
+	subRouter := &Router{routeChain: slices.Clone(r.routeChain), isSubRouter: true, mux: r.mux}
 	fn(subRouter)
 }
 
@@ -67,11 +67,11 @@ func (r *Router) Handle(pattern string, h http.Handler) {
 	for _, mw := range slices.Backward(r.routeChain) {
 		h = mw(h)
 	}
-	r.ServeMux.Handle(pattern, h)
+	r.mux.Handle(pattern, h)
 }
 
 func (r *Router) ServeHTTP(w http.ResponseWriter, rq *http.Request) {
-	var h http.Handler = r.ServeMux
+	var h http.Handler = r.mux
 
 	for _, mw := range slices.Backward(r.globalChain) {
 		h = mw(h)
