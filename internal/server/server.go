@@ -1,13 +1,16 @@
 package server
 
 import (
+	"errors"
 	"fmt"
 	"log/slog"
 	"net/http"
 
 	"github.com/firefart/entra-phishing-detection/internal/config"
 	"github.com/firefart/entra-phishing-detection/internal/server/handlers"
+	"github.com/firefart/entra-phishing-detection/internal/server/httperror"
 	"github.com/firefart/entra-phishing-detection/internal/server/middleware"
+	"github.com/firefart/entra-phishing-detection/internal/server/router"
 )
 
 type server struct {
@@ -16,21 +19,10 @@ type server struct {
 	debug  bool
 }
 
-func (s *server) customHandler(f func(http.ResponseWriter, *http.Request) error) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		err := f(w, r)
-		if err != nil {
-			s.logger.Error("error on request", slog.String("err", err.Error()))
-			w.WriteHeader(http.StatusNoContent)
-			w.Header().Set("Content-Type", "text/plain")
-			fmt.Fprint(w, "")
-		}
-	}
-}
-
-func notFound(w http.ResponseWriter, _ *http.Request) {
+func notFound(w http.ResponseWriter, _ *http.Request) error {
 	w.WriteHeader(http.StatusOK)
 	fmt.Fprint(w, "")
+	return nil
 }
 
 func NewServer(opts ...OptionsServerFunc) http.Handler {
@@ -50,7 +42,19 @@ func NewServer(opts ...OptionsServerFunc) http.Handler {
 		Debug:                s.debug,
 	}
 
-	mux := http.NewServeMux()
+	r := router.New()
+
+	r.SetErrorHandler(func(w http.ResponseWriter, r *http.Request, err error) {
+		s.logger.Error("error on request", slog.String("err", err.Error()))
+		var httpErr *httperror.HTTPError
+		if errors.As(err, &httpErr) {
+			http.Error(w, "", httpErr.StatusCode)
+		} else {
+			http.Error(w, "", http.StatusInternalServerError)
+		}
+	})
+
+	r.Use(middleware.RealIP(s.config.Server.IPHeader))
 
 	// image generation route
 	imageRoute := "image"
@@ -58,23 +62,29 @@ func NewServer(opts ...OptionsServerFunc) http.Handler {
 		imageRoute = s.config.Server.PathImage
 	}
 	s.logger.Info("image route", slog.String("route", imageRoute))
-	mux.HandleFunc(fmt.Sprintf("GET /%s", imageRoute), middleware.RealIP(s.config.Server.IPHeader, s.customHandler(handlers.NewImageHandler(s.config, s.logger).Handler)))
+	r.HandleFunc(fmt.Sprintf("GET /%s", imageRoute), handlers.NewImageHandler(s.config, s.logger).Handler)
 	// health check for monitoring
 	healthRoute := "health"
 	if s.config.Server.PathHealth != "" {
 		healthRoute = s.config.Server.PathHealth
 	}
 	s.logger.Info("health route", slog.String("route", healthRoute))
-	mux.HandleFunc(fmt.Sprintf("GET /%s", healthRoute), handlers.NewHealthHandler().Handler)
+	r.HandleFunc(fmt.Sprintf("GET /%s", healthRoute), handlers.NewHealthHandler().Handler)
 	// version info
 	versionRoute := "version"
 	if s.config.Server.PathVersion != "" {
 		versionRoute = s.config.Server.PathVersion
 	}
-	s.logger.Info("version route", slog.String("route", versionRoute))
-	mux.HandleFunc(fmt.Sprintf("GET /%s", versionRoute), middleware.RealIP(s.config.Server.IPHeader, middleware.SecretKeyHeader(secretKeyHeaderMW, s.customHandler(handlers.NewVersionHandler().Handler))))
-	// custom 404 for the rest
-	mux.HandleFunc("/", notFound)
 
-	return mux
+	r.Group(func(r *router.Router) {
+		r.Use(middleware.SecretKeyHeader(secretKeyHeaderMW))
+
+		s.logger.Info("version route", slog.String("route", versionRoute))
+		r.HandleFunc(fmt.Sprintf("GET /%s", versionRoute), handlers.NewVersionHandler().Handler)
+	})
+
+	// custom 404 for the rest
+	r.HandleFunc("/", notFound)
+
+	return r
 }

@@ -33,9 +33,11 @@ func getRealIP(ipHeader string, r *http.Request) string {
 	return realIP
 }
 
-func RealIP(ipHeader string, next http.Handler) http.HandlerFunc {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		ctx := context.WithValue(r.Context(), ContextKeyIP, getRealIP(ipHeader, r))
-		next.ServeHTTP(w, r.WithContext(ctx))
-	})
+func RealIP(ipHeader string) func(next http.Handler) http.Handler {
+	return func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			ctx := context.WithValue(r.Context(), ContextKeyIP, getRealIP(ipHeader, r))
+			next.ServeHTTP(w, r.WithContext(ctx))
+		})
+	}
 }
