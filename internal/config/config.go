@@ -3,6 +3,7 @@ package config
 import (
 	"errors"
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/hashicorp/go-multierror"
@@ -75,6 +76,12 @@ func GetConfig(f string) (Configuration, error) {
 		}
 		return Configuration{}, resultErr
 	}
+
+	// cleanup config
+	// remove leading slashes from paths
+	config.Server.PathImage = strings.TrimLeft(config.Server.PathImage, "/")
+	config.Server.PathHealth = strings.TrimLeft(config.Server.PathHealth, "/")
+	config.Server.PathVersion = strings.TrimLeft(config.Server.PathVersion, "/")
 
 	return config, nil
 }

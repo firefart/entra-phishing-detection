@@ -56,31 +56,33 @@ func NewServer(opts ...OptionsServerFunc) http.Handler {
 
 	r.Use(middleware.RealIP(s.config.Server.IPHeader))
 
-	// image generation route
-	imageRoute := "image"
+	imageRoute := "/image"
 	if s.config.Server.PathImage != "" {
-		imageRoute = s.config.Server.PathImage
-	}
-	s.logger.Info("image route", slog.String("route", imageRoute))
-	r.HandleFunc(fmt.Sprintf("GET /%s", imageRoute), handlers.NewImageHandler(s.config, s.logger).Handler)
-	// health check for monitoring
-	healthRoute := "health"
-	if s.config.Server.PathHealth != "" {
-		healthRoute = s.config.Server.PathHealth
-	}
-	s.logger.Info("health route", slog.String("route", healthRoute))
-	r.HandleFunc(fmt.Sprintf("GET /%s", healthRoute), handlers.NewHealthHandler().Handler)
-	// version info
-	versionRoute := "version"
-	if s.config.Server.PathVersion != "" {
-		versionRoute = s.config.Server.PathVersion
+		imageRoute = fmt.Sprintf("/%s", s.config.Server.PathImage)
 	}
 
+	healthRoute := "/health"
+	if s.config.Server.PathHealth != "" {
+		healthRoute = fmt.Sprintf("/%s", s.config.Server.PathHealth)
+	}
+
+	versionRoute := "/version"
+	if s.config.Server.PathVersion != "" {
+		versionRoute = fmt.Sprintf("/%s", s.config.Server.PathVersion)
+	}
+
+	s.logger.Info("image route", slog.String("route", imageRoute))
+	s.logger.Info("health route", slog.String("route", healthRoute))
+	s.logger.Info("version route", slog.String("route", versionRoute))
+
+	// image generation route
+	r.HandleFunc(fmt.Sprintf("GET %s", imageRoute), handlers.NewImageHandler(s.config, s.logger).Handler)
+	// health check for monitoring
+	r.HandleFunc(fmt.Sprintf("GET %s", healthRoute), handlers.NewHealthHandler().Handler)
+	// version info secured by secret key header
 	r.Group(func(r *router.Router) {
 		r.Use(middleware.SecretKeyHeader(secretKeyHeaderMW))
-
-		s.logger.Info("version route", slog.String("route", versionRoute))
-		r.HandleFunc(fmt.Sprintf("GET /%s", versionRoute), handlers.NewVersionHandler().Handler)
+		r.HandleFunc(fmt.Sprintf("GET %s", versionRoute), handlers.NewVersionHandler().Handler)
 	})
 
 	// custom 404 for the rest
