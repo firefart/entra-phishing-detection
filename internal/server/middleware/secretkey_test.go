@@ -24,14 +24,14 @@ func TestSecretKeyHeader(t *testing.T) {
 	req := httptest.NewRequest(http.MethodGet, "/", nil)
 	req.Header.Set(mwConfig.SecretKeyHeaderName, mwConfig.SecretKeyHeaderValue)
 	rec := httptest.NewRecorder()
-	SecretKeyHeader(mwConfig, next).ServeHTTP(rec, req)
+	SecretKeyHeader(mwConfig)(next).ServeHTTP(rec, req)
 	require.Equal(t, http.StatusOK, rec.Code)
 	require.Equal(t, "secret content", rec.Body.String())
 
 	// no header
 	req = httptest.NewRequest(http.MethodGet, "/", nil)
 	rec = httptest.NewRecorder()
-	SecretKeyHeader(mwConfig, next).ServeHTTP(rec, req)
+	SecretKeyHeader(mwConfig)(next).ServeHTTP(rec, req)
 	require.Equal(t, http.StatusOK, rec.Code)
 	require.Empty(t, rec.Body.String())
 
@@ -39,7 +39,7 @@ func TestSecretKeyHeader(t *testing.T) {
 	req = httptest.NewRequest(http.MethodGet, "/", nil)
 	req.Header.Set(mwConfig.SecretKeyHeaderName, "wrong value")
 	rec = httptest.NewRecorder()
-	SecretKeyHeader(mwConfig, next).ServeHTTP(rec, req)
+	SecretKeyHeader(mwConfig)(next).ServeHTTP(rec, req)
 	require.Equal(t, http.StatusOK, rec.Code)
 	require.Empty(t, rec.Body.String())
 
@@ -52,7 +52,7 @@ func TestSecretKeyHeader(t *testing.T) {
 	req = httptest.NewRequest(http.MethodGet, "/", nil)
 	req.Header.Set(mwConfig.SecretKeyHeaderName, "wrong value")
 	rec = httptest.NewRecorder()
-	SecretKeyHeader(mwConfig, next).ServeHTTP(rec, req)
+	SecretKeyHeader(mwConfig)(next).ServeHTTP(rec, req)
 	require.Equal(t, http.StatusOK, rec.Code)
 	require.Equal(t, "secret content", rec.Body.String())
 
@@ -61,7 +61,7 @@ func TestSecretKeyHeader(t *testing.T) {
 	require.Panics(t, func() {
 		SecretKeyHeader(SecretKeyHeaderConfig{
 			SecretKeyHeaderValue: "secret",
-		}, next).ServeHTTP(rec, req)
+		})(next).ServeHTTP(rec, req)
 	})
 
 	// panic if no header value set
@@ -69,6 +69,6 @@ func TestSecretKeyHeader(t *testing.T) {
 	require.Panics(t, func() {
 		SecretKeyHeader(SecretKeyHeaderConfig{
 			SecretKeyHeaderName: "X-Secret-Key",
-		}, next).ServeHTTP(rec, req)
+		})(next).ServeHTTP(rec, req)
 	})
 }
