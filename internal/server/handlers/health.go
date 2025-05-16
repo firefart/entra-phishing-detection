@@ -14,5 +14,5 @@ func NewHealthHandler() *HealthHandler {
 func (h *HealthHandler) Handler(w http.ResponseWriter, _ *http.Request) {
 	w.WriteHeader(http.StatusOK)
 	w.Header().Set("Content-Type", "text/plain")
-	fmt.Fprint(w, "")
+	fmt.Fprint(w, "OK")
 }
