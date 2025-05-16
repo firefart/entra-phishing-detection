@@ -14,5 +14,5 @@ func TestHealth(t *testing.T) {
 	req := httptest.NewRequest(http.MethodGet, "/", nil)
 	handlers.NewHealthHandler().Handler(rec, req)
 	require.Equal(t, http.StatusOK, rec.Code)
-	require.Empty(t, rec.Body)
+	require.Equal(t, "OK", rec.Body.String())
 }
