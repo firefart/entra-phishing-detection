@@ -22,7 +22,7 @@ func TestRealIP(t *testing.T) {
 	req := httptest.NewRequest(http.MethodGet, "/", nil)
 	req.Header.Set("X-Real-IP", "some-ip")
 	rec := httptest.NewRecorder()
-	RealIP("X-Real-IP", next).ServeHTTP(rec, req)
+	RealIP("X-Real-IP")(next).ServeHTTP(rec, req)
 	require.Equal(t, http.StatusOK, rec.Code)
 	require.Equal(t, "next content", rec.Body.String())
 }
