@@ -36,7 +36,7 @@ func TestParseConfig(t *testing.T) {
     "secret_key_header_name": "X-Secret-Key-Header",
     "secret_key_header_value": "SECRET",
 		"ip_header": "IP-Header",
-    "path_image": "iamge_path",
+    "path_image": "image_path",
     "path_health": "health_path",
     "path_version": "version_path"
   },
@@ -65,7 +65,7 @@ func TestParseConfig(t *testing.T) {
 	require.Equal(t, "SECRET", c.Server.SecretKeyHeaderValue)
 
 	require.Equal(t, "IP-Header", c.Server.IPHeader)
-	require.Equal(t, "iamge_path", c.Server.PathImage)
+	require.Equal(t, "image_path", c.Server.PathImage)
 	require.Equal(t, "health_path", c.Server.PathHealth)
 	require.Equal(t, "version_path", c.Server.PathVersion)
 
