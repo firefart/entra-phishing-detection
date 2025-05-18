@@ -12,7 +12,7 @@ import (
 func TestHealth(t *testing.T) {
 	rec := httptest.NewRecorder()
 	req := httptest.NewRequest(http.MethodGet, "/", nil)
-	handlers.NewHealthHandler().Handler(rec, req)
+	require.NoError(t, handlers.NewHealthHandler().Handler(rec, req))
 	require.Equal(t, http.StatusOK, rec.Code)
 	require.Equal(t, "OK", rec.Body.String())
 }
