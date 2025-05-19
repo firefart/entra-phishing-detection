@@ -1,6 +1,7 @@
 {
 	# debug
 	admin off
+	metrics
 	auto_https off
 	servers {
 		trusted_proxies static private_ranges
@@ -22,8 +23,12 @@
 
 # prometheus metrics
 :8889 {
-	@prometheus {
-			remote_ip 10.10.10.10
-	}
-	reverse_proxy @prometheus entra:8001
+	@denied not client_ip private_ranges # replace with prometheus IP
+	abort @denied
+
+	# expose caddy metrics under a different endpoint
+	metrics /caddy/metrics
+
+  # app specific metrics
+	reverse_proxy entra:8001
 }

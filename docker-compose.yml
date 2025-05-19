@@ -24,7 +24,7 @@ services:
     restart: unless-stopped
     ports:
       - "${WEB_LISTEN:-0.0.0.0:8000}:8888"
-      - "${METRICS_LISTEN:-0.0.0.0:8000}:8889"
+      - "${METRICS_LISTEN:-0.0.0.0:8001}:8889"
     configs:
       - source: caddyfile
         target: /etc/caddy/Caddyfile
