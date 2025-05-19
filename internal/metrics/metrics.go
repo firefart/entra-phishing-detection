@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	"github.com/prometheus/client_golang/prometheus"
+	"github.com/prometheus/client_golang/prometheus/collectors"
 )
 
 type Metrics struct {
@@ -32,6 +33,13 @@ func NewMetrics(reg prometheus.Registerer) (*Metrics, error) {
 			},
 			labels,
 		),
+	}
+	// also add the default collectors
+	if err := reg.Register(collectors.NewGoCollector()); err != nil {
+		return nil, fmt.Errorf("failed to register go collector: %w", err)
+	}
+	if err := reg.Register(collectors.NewProcessCollector(collectors.ProcessCollectorOpts{})); err != nil {
+		return nil, fmt.Errorf("failed to register process collector: %w", err)
 	}
 	if err := reg.Register(m.RequestCount); err != nil {
 		return nil, fmt.Errorf("failed to register request count metric: %w", err)

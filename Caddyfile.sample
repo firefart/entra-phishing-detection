@@ -1,7 +1,9 @@
 {
 	# debug
 	admin off
-	metrics
+	metrics {
+		per_host
+	}
 	auto_https off
 	servers {
 		trusted_proxies static private_ranges
@@ -29,6 +31,6 @@
 	# expose caddy metrics under a different endpoint
 	metrics /caddy/metrics
 
-  # app specific metrics
+	# app specific metrics
 	reverse_proxy entra:8001
 }

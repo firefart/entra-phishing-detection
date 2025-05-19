@@ -56,6 +56,7 @@ func NewServer(opts ...OptionsServerFunc) http.Handler {
 		}
 	})
 
+	r.Use(middleware.Prometheus(s.metrics))
 	r.Use(middleware.RealIP(s.config.Server.IPHeader))
 
 	imageRoute := "/image"
