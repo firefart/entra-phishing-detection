@@ -19,3 +19,11 @@
 
 	reverse_proxy entra:8000
 }
+
+# prometheus metrics
+:8889 {
+	@prometheus {
+			remote_ip 10.10.10.10
+	}
+	reverse_proxy @prometheus entra:8001
+}

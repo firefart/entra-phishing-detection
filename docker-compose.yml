@@ -3,7 +3,7 @@ services:
     image: firefart/entra-phishing-detection:latest
     build:
       context: .
-    command: "-config /app/config.json -json -listen :8000"
+    command: "-config /app/config.json -json -listen :8000 -listen-metrics :8001"
     hostname: entra
     healthcheck:
       test: curl -f -sS ${HEALTHCHECK:-http://localhost:8000/health} || exit 1
@@ -24,6 +24,7 @@ services:
     restart: unless-stopped
     ports:
       - "${WEB_LISTEN:-0.0.0.0:8000}:8888"
+      - "${METRICS_LISTEN:-0.0.0.0:8000}:8889"
     configs:
       - source: caddyfile
         target: /etc/caddy/Caddyfile

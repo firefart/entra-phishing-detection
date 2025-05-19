@@ -2,7 +2,7 @@
 
 ## LICENSE
 
-[This work](https://github.com/firefart/entra-phishing-detection) © 2025 by [Christian Mehlmauer](https://github.com/firefart) is licensed under [CC BY-NC-SA 4.0](https://creativecommons.org/licenses/by-nc-sa/4.0/?ref=chooser-v1) 
+[This work](https://github.com/firefart/entra-phishing-detection) © 2025 by [Christian Mehlmauer](https://github.com/firefart) is licensed under [CC BY-NC-SA 4.0](https://creativecommons.org/licenses/by-nc-sa/4.0/?ref=chooser-v1)
 
 ## Description
 
@@ -58,10 +58,12 @@ Use `--help` to show all available flags and default values
 
 ```text
 WEB_LISTEN=127.0.0.1:8000
+METRICS_LISTEN=127.0.0.1:8001
 HEALTHCHECK=http://localhost:8000/health_path
 ```
 
-| Value       | Description                                                                                                                                 |
-| ----------- | ------------------------------------------------------------------------------------------------------------------------------------------- |
-| WEB_LISTEN  | Listening Port on the local machine where Caddy should be exposed. If you only specify a port, the port will be available on all interfaces |
-| HEALTHCHECH | this needs to be the full url matching the `server.path_health` property from `config.json`                                                 |
+| Value          | Description                                                                                                                                                                       |
+| -------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| WEB_LISTEN     | Listening Port on the local machine where Caddy should be exposed. If you only specify a port, the port will be available on all interfaces                                       |
+| METRICS_LISTEN | Listening port where caddy should expose the prometheus metrics. Be sure to configure an ip ACL or any other form of authentication so the metrics are not exposed to the public. |
+| HEALTHCHECH    | this needs to be the full url matching the `server.path_health` property from `config.json`                                                                                       |
