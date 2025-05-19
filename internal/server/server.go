@@ -7,6 +7,7 @@ import (
 	"net/http"
 
 	"github.com/firefart/entra-phishing-detection/internal/config"
+	"github.com/firefart/entra-phishing-detection/internal/metrics"
 	"github.com/firefart/entra-phishing-detection/internal/server/handlers"
 	"github.com/firefart/entra-phishing-detection/internal/server/httperror"
 	"github.com/firefart/entra-phishing-detection/internal/server/middleware"
@@ -14,9 +15,10 @@ import (
 )
 
 type server struct {
-	logger *slog.Logger
-	config config.Configuration
-	debug  bool
+	logger  *slog.Logger
+	config  config.Configuration
+	debug   bool
+	metrics *metrics.Metrics
 }
 
 func notFound(w http.ResponseWriter, _ *http.Request) error {

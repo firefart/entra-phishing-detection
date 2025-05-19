@@ -13,9 +13,11 @@ import (
 	"syscall"
 
 	"github.com/firefart/entra-phishing-detection/internal/config"
+	"github.com/firefart/entra-phishing-detection/internal/metrics"
 	"github.com/firefart/entra-phishing-detection/internal/server"
 
 	"github.com/hashicorp/go-multierror"
+	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"go.uber.org/automaxprocs/maxprocs"
 )
@@ -93,10 +95,17 @@ func run(ctx context.Context, logger *slog.Logger, configFilename string, debugM
 		return err
 	}
 
+	reg := prometheus.NewRegistry()
+	m, err := metrics.NewMetrics(reg)
+	if err != nil {
+		return fmt.Errorf("failed to create metrics: %w", err)
+	}
+
 	options := []server.OptionsServerFunc{
 		server.WithLogger(logger),
 		server.WithConfig(configuration),
 		server.WithDebug(debugMode),
+		server.WithMetrics(m),
 	}
 
 	s := server.NewServer(options...)
@@ -124,7 +133,7 @@ func run(ctx context.Context, logger *slog.Logger, configFilename string, debugM
 	}()
 
 	muxMetrics := nethttp.NewServeMux()
-	muxMetrics.Handle("/metrics", promhttp.Handler())
+	muxMetrics.Handle("/metrics", promhttp.HandlerFor(reg, promhttp.HandlerOpts{Registry: reg}))
 	srvMetrics := &nethttp.Server{
 		Addr:         listenMetrics,
 		Handler:      muxMetrics,

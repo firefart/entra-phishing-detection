@@ -4,6 +4,7 @@ import (
 	"log/slog"
 
 	"github.com/firefart/entra-phishing-detection/internal/config"
+	"github.com/firefart/entra-phishing-detection/internal/metrics"
 )
 
 type OptionsServerFunc func(c *server)
@@ -18,4 +19,8 @@ func WithConfig(config config.Configuration) OptionsServerFunc {
 
 func WithDebug(d bool) OptionsServerFunc {
 	return func(c *server) { c.debug = d }
+}
+
+func WithMetrics(m *metrics.Metrics) OptionsServerFunc {
+	return func(c *server) { c.metrics = m }
 }
