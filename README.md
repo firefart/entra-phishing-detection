@@ -12,7 +12,7 @@ The company branding CSS is no fully supported CSS as it's parsed by javascript 
 
 ## Example
 
-[screenshot](screenshot.png)
+![screenshot](screenshot.png)
 
 ## CSS to include
 
