@@ -19,6 +19,13 @@ type ImageHandler struct {
 	metrics *metrics.Metrics
 }
 
+var (
+	reasonMissingReferer        = "missing referer"
+	reasonInvalidReferer        = "invalid referer"
+	reasonRefererNotWhitelisted = "referer not whitelisted"
+	reasonAllowedReferer        = "referer allowed"
+)
+
 func NewImageHandler(c config.Configuration, m *metrics.Metrics, logger *slog.Logger) *ImageHandler {
 	return &ImageHandler{
 		config:  c,
@@ -47,7 +54,7 @@ func (h *ImageHandler) phishingAttempt(w http.ResponseWriter, r *http.Request, r
 }
 
 func (h *ImageHandler) safeURL(w http.ResponseWriter, r *http.Request) error {
-	h.metrics.ImageHits.WithLabelValues("referer allowed").Inc()
+	h.metrics.ImageHits.WithLabelValues(reasonAllowedReferer).Inc()
 
 	w.WriteHeader(http.StatusOK)
 	return templates.ImageOK().Render(r.Context(), w)
@@ -64,14 +71,14 @@ func (h *ImageHandler) Handler(w http.ResponseWriter, r *http.Request) error {
 
 	referer := r.Header.Get("Referer")
 	if referer == "" {
-		return h.phishingAttempt(w, r, "missing referer")
+		return h.phishingAttempt(w, r, reasonMissingReferer)
 	}
 	parsed, err := url.Parse(referer)
 	if err != nil {
-		return h.phishingAttempt(w, r, "invalid referer")
+		return h.phishingAttempt(w, r, reasonInvalidReferer)
 	}
 	if slices.Contains(h.config.AllowedOrigins, parsed.Hostname()) {
 		return h.safeURL(w, r)
 	}
-	return h.phishingAttempt(w, r, "referer not whitelisted")
+	return h.phishingAttempt(w, r, reasonRefererNotWhitelisted)
 }
