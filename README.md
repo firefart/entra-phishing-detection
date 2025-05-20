@@ -32,13 +32,15 @@ Copy the `config.sample.json`to `config.json` and `Caddyfile.example` to `Caddyf
 
 Use `--help` to show all available flags and default values
 
-| Value        | Description                                              |
-| ------------ | -------------------------------------------------------- |
-| -listen      | the ip and port to listen to                             |
-| -config      | the config filename                                      |
-| -json        | print all logs in json format so it can be parsed easily |
-| -configcheck | checks the configfile and exits with an error code       |
-| -version     | shows version information and exits                      |
+| Value          | Description                                                                                             |
+| -------------- | ------------------------------------------------------------------------------------------------------- |
+| -listen        | the ip and port to listen to                                                                            |
+| -listenMetrics | the ip and port to listen to for metrics (this endpoint should not be exposed directly to the internet) |
+| -config        | the config filename                                                                                     |
+| -debug         | enable debug output                                                                                     |
+| -json          | print all logs in json format so it can be parsed easily                                                |
+| -configcheck   | checks the configfile and exits with an error code                                                      |
+| -version       | shows version information and exits                                                                     |
 
 ## config.json
 
