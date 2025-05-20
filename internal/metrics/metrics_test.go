@@ -21,7 +21,7 @@ func TestNewMetrics(t *testing.T) {
 	require.NotNil(t, m)
 	// we need to increment at least once so it will show up in the metrics
 	testMetric.Add(69)
-	m.ImageHits.WithLabelValues("success").Add(69)
+	m.ImageHits.WithLabelValues("host.com", "success").Add(69)
 	gathered, err := reg.Gather()
 	require.NoError(t, err)
 	require.NotEmpty(t, gathered)
@@ -39,8 +39,11 @@ func TestNewMetrics(t *testing.T) {
 			tmp := metric.GetMetric()[0]
 			require.Equal(t, float64(69), tmp.GetCounter().GetValue()) // nolint:testifylint
 			labels := tmp.GetLabel()
-			require.Len(t, labels, 1)
-			require.Equal(t, "success", labels[0].GetValue())
+			require.Len(t, labels, 2)
+			require.Equal(t, "host", labels[0].GetName())
+			require.Equal(t, "host.com", labels[0].GetValue())
+			require.Equal(t, "status", labels[1].GetName())
+			require.Equal(t, "success", labels[1].GetValue())
 		}
 	}
 	require.True(t, foundCounter, "Expected test_total to be found in gathered metrics")

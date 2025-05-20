@@ -12,14 +12,14 @@ type Metrics struct {
 }
 
 func NewMetrics(reg prometheus.Registerer) (*Metrics, error) {
-	labels := []string{"status"}
+	labels := []string{"host", "status"}
 	nameSpace := "entra_phishing_detection"
 	m := &Metrics{
 		ImageHits: prometheus.NewCounterVec(
 			prometheus.CounterOpts{
 				Namespace: nameSpace,
 				Name:      "image_hits_total",
-				Help:      "How many requests were made to the image handler. Includes the status of the response.",
+				Help:      "How many requests were made to the image handler. Includes the request host and the status of the response.",
 			},
 			labels,
 		),

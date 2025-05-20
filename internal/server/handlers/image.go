@@ -47,7 +47,9 @@ func (h *ImageHandler) phishingAttempt(w http.ResponseWriter, r *http.Request, r
 	}
 
 	h.logger.With(slog.String("reason", reason), slog.String("remote_ip", ip)).WithGroup("headers").Warn("phishing attempt detected", header...)
-	h.metrics.ImageHits.WithLabelValues(reason).Inc()
+
+	host := r.Header.Get("Host")
+	h.metrics.ImageHits.WithLabelValues(host, reason).Inc()
 
 	w.WriteHeader(http.StatusOK)
 	return templates.ImageNOK().Render(r.Context(), w)
