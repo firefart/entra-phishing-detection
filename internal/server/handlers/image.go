@@ -48,7 +48,7 @@ func (h *ImageHandler) phishingAttempt(w http.ResponseWriter, r *http.Request, r
 
 	h.logger.With(slog.String("reason", reason), slog.String("remote_ip", ip)).WithGroup("headers").Warn("phishing attempt detected", header...)
 
-	host := r.Header.Get("Host")
+	host := r.Host
 	h.metrics.ImageHits.WithLabelValues(host, reason).Inc()
 
 	w.WriteHeader(http.StatusOK)
@@ -56,7 +56,7 @@ func (h *ImageHandler) phishingAttempt(w http.ResponseWriter, r *http.Request, r
 }
 
 func (h *ImageHandler) safeURL(w http.ResponseWriter, r *http.Request) error {
-	host := r.Header.Get("Host")
+	host := r.Host
 	h.metrics.ImageHits.WithLabelValues(host, reasonAllowedReferer).Inc()
 
 	w.WriteHeader(http.StatusOK)
