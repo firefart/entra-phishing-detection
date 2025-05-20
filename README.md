@@ -7,8 +7,12 @@
 ## Description
 
 This project implements an entra phishing protection. It's not bulletproof but can detect simple MITM scenarios by checking the `Referer` header to be a valid microsoft url.
-This can prevent EvilNGINX attacks by modifying the background image, but can easily be bypassed. If an invalid referer is detected, we will show a stange image to prevent the user entering some credentials (currently only available in german). You can implement additional alerts using the provided access logs, like a successful login without an request to this service, or a request from a server ip range.
+This can prevent EvilNGINX attacks by modifying the background image via custom branding, but can easily be bypassed. If an invalid referer (not `login.microsoftonline.com`) is detected, we will show a strange image to prevent the user entering some credentials (currently only available in german). You can implement additional alerts using the provided access logs, like a successful login without an request to this service, or a request from a server ip range. There are also some exposed metrics to include in your dashboards.
 The company branding CSS is no fully supported CSS as it's parsed by javascript and you can only [style the predefined elements](https://learn.microsoft.com/en-us/entra/fundamentals/reference-company-branding-css-template). This prevents stuff like including a dynamic CSS so we can only work with the background.
+
+## Example
+
+[screenshot](screenshot.png)
 
 ## CSS to include
 
