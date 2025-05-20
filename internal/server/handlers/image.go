@@ -47,6 +47,8 @@ func (h *ImageHandler) phishingAttempt(w http.ResponseWriter, r *http.Request, r
 }
 
 func (h *ImageHandler) safeURL(w http.ResponseWriter, r *http.Request) error {
+	h.metrics.ImageHits.WithLabelValues("referer allowed").Inc()
+
 	w.WriteHeader(http.StatusOK)
 	return templates.ImageOK().Render(r.Context(), w)
 }
