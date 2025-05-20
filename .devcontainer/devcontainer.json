@@ -29,7 +29,8 @@
         "otovo-oss.htmx-tags",
         "a-h.templ",
         "rangav.vscode-thunder-client",
-        "Gruntfuggly.todo-tree"
+        "Gruntfuggly.todo-tree",
+        "matthewpi.caddyfile-support"
       ]
     }
   }

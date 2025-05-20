@@ -8,19 +8,22 @@ import (
 	"strings"
 
 	"github.com/firefart/entra-phishing-detection/internal/config"
+	"github.com/firefart/entra-phishing-detection/internal/metrics"
 	"github.com/firefart/entra-phishing-detection/internal/server/middleware"
 	"github.com/firefart/entra-phishing-detection/internal/server/templates"
 )
 
 type ImageHandler struct {
-	config config.Configuration
-	logger *slog.Logger
+	config  config.Configuration
+	logger  *slog.Logger
+	metrics *metrics.Metrics
 }
 
-func NewImageHandler(c config.Configuration, logger *slog.Logger) *ImageHandler {
+func NewImageHandler(c config.Configuration, m *metrics.Metrics, logger *slog.Logger) *ImageHandler {
 	return &ImageHandler{
-		config: c,
-		logger: logger,
+		config:  c,
+		logger:  logger,
+		metrics: m,
 	}
 }
 
@@ -37,6 +40,7 @@ func (h *ImageHandler) phishingAttempt(w http.ResponseWriter, r *http.Request, r
 	}
 
 	h.logger.With(slog.String("reason", reason), slog.String("remote_ip", ip)).WithGroup("headers").Warn("phishing attempt detected", header...)
+	h.metrics.ImageHits.WithLabelValues(reason).Inc()
 
 	w.WriteHeader(http.StatusOK)
 	return templates.ImageNOK().Render(r.Context(), w)

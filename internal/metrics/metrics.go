@@ -8,28 +8,18 @@ import (
 )
 
 type Metrics struct {
-	RequestCount    *prometheus.CounterVec
-	RequestDuration *prometheus.HistogramVec
+	ImageHits *prometheus.CounterVec
 }
 
 func NewMetrics(reg prometheus.Registerer) (*Metrics, error) {
-	labels := []string{"code", "method", "host", "url", "referer"}
+	labels := []string{"status"}
 	nameSpace := "entra_phishing_detection"
 	m := &Metrics{
-		RequestCount: prometheus.NewCounterVec(
+		ImageHits: prometheus.NewCounterVec(
 			prometheus.CounterOpts{
 				Namespace: nameSpace,
-				Name:      "requests_total",
-				Help:      "How many HTTP requests processed, partitioned by status code and HTTP method.",
-			},
-			labels,
-		),
-		RequestDuration: prometheus.NewHistogramVec(
-			prometheus.HistogramOpts{
-				Namespace: nameSpace,
-				Name:      "request_duration_seconds",
-				Help:      "The HTTP request latencies in seconds.",
-				Buckets:   prometheus.DefBuckets,
+				Name:      "image_hits_total",
+				Help:      "How many requests were made to the image handler. Includes the status of the response.",
 			},
 			labels,
 		),
@@ -41,11 +31,8 @@ func NewMetrics(reg prometheus.Registerer) (*Metrics, error) {
 	if err := reg.Register(collectors.NewProcessCollector(collectors.ProcessCollectorOpts{})); err != nil {
 		return nil, fmt.Errorf("failed to register process collector: %w", err)
 	}
-	if err := reg.Register(m.RequestCount); err != nil {
+	if err := reg.Register(m.ImageHits); err != nil {
 		return nil, fmt.Errorf("failed to register request count metric: %w", err)
-	}
-	if err := reg.Register(m.RequestDuration); err != nil {
-		return nil, fmt.Errorf("failed to register request duration metric: %w", err)
 	}
 
 	return m, nil

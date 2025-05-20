@@ -7,7 +7,9 @@ import (
 	"testing"
 
 	"github.com/firefart/entra-phishing-detection/internal/config"
+	"github.com/firefart/entra-phishing-detection/internal/metrics"
 	"github.com/firefart/entra-phishing-detection/internal/server/handlers"
+	"github.com/prometheus/client_golang/prometheus"
 	"github.com/stretchr/testify/require"
 )
 
@@ -22,7 +24,9 @@ func TestImage(t *testing.T) {
 		AllowedOrigins: []string{"loginsite.internal"},
 	}
 	logger := slog.New(slog.DiscardHandler)
-	imageHandler := handlers.NewImageHandler(configuration, logger)
+	m, err := metrics.NewMetrics(prometheus.NewRegistry())
+	require.NoError(t, err)
+	imageHandler := handlers.NewImageHandler(configuration, m, logger)
 
 	req := httptest.NewRequest(http.MethodGet, "/", nil)
 	rec := httptest.NewRecorder()

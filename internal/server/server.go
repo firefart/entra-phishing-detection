@@ -56,7 +56,6 @@ func NewServer(opts ...OptionsServerFunc) http.Handler {
 		}
 	})
 
-	r.Use(middleware.Prometheus(s.metrics))
 	r.Use(middleware.RealIP(s.config.Server.IPHeader))
 
 	imageRoute := "/image"
@@ -79,7 +78,7 @@ func NewServer(opts ...OptionsServerFunc) http.Handler {
 	s.logger.Info("version route", slog.String("route", versionRoute))
 
 	// image generation route
-	r.HandleFunc(fmt.Sprintf("GET %s", imageRoute), handlers.NewImageHandler(s.config, s.logger).Handler)
+	r.HandleFunc(fmt.Sprintf("GET %s", imageRoute), handlers.NewImageHandler(s.config, s.metrics, s.logger).Handler)
 	// health check for monitoring
 	r.HandleFunc(fmt.Sprintf("GET %s", healthRoute), handlers.NewHealthHandler().Handler)
 	// version info secured by secret key header
