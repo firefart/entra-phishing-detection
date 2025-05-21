@@ -26,6 +26,21 @@ var (
 	reasonAllowedReferer        = "referer allowed"
 )
 
+// getHost returns the host from the request. It checks the Host header, X-Forwarded-Host header, and falls back to r.Host and r.RemoteAddr.
+func getHost(r *http.Request) string {
+	host := r.Header.Get("Host")
+	if host == "" {
+		host = r.Header.Get("X-Forwarded-Host")
+	}
+	if host == "" {
+		host = r.Host
+	}
+	if host == "" {
+		host = r.RemoteAddr
+	}
+	return host
+}
+
 func NewImageHandler(c config.Configuration, m *metrics.Metrics, logger *slog.Logger) *ImageHandler {
 	return &ImageHandler{
 		config:  c,
@@ -48,7 +63,7 @@ func (h *ImageHandler) phishingAttempt(w http.ResponseWriter, r *http.Request, r
 
 	h.logger.With(slog.String("reason", reason), slog.String("remote_ip", ip)).WithGroup("headers").Warn("phishing attempt detected", header...)
 
-	host := r.Host
+	host := getHost(r)
 	h.metrics.ImageHits.WithLabelValues(host, reason).Inc()
 
 	w.WriteHeader(http.StatusOK)
@@ -56,7 +71,7 @@ func (h *ImageHandler) phishingAttempt(w http.ResponseWriter, r *http.Request, r
 }
 
 func (h *ImageHandler) safeURL(w http.ResponseWriter, r *http.Request) error {
-	host := r.Host
+	host := getHost(r)
 	h.metrics.ImageHits.WithLabelValues(host, reasonAllowedReferer).Inc()
 
 	w.WriteHeader(http.StatusOK)
