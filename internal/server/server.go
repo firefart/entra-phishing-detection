@@ -56,6 +56,7 @@ func NewServer(opts ...OptionsServerFunc) http.Handler {
 		}
 	})
 
+	r.Use(middleware.Recover(s.logger))
 	r.Use(middleware.RealIP(s.config.Server.IPHeader))
 
 	imageRoute := "/image"
