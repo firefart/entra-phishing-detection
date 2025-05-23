@@ -1,6 +1,8 @@
 package main
 
 import (
+	"fmt"
+	"io"
 	"log/slog"
 	"os"
 	"strings"
@@ -9,8 +11,17 @@ import (
 	"github.com/mattn/go-isatty"
 )
 
-func newLogger(debugMode, jsonOutput bool) *slog.Logger {
-	w := os.Stdout
+func newLogger(debugMode, jsonOutput bool, logFileName string) (*slog.Logger, error) {
+	var w io.Writer
+	w = os.Stdout
+	if logFileName != "" {
+		logFile, err := os.OpenFile(logFileName, os.O_RDWR|os.O_CREATE|os.O_APPEND, 0o666)
+		if err != nil {
+			return nil, fmt.Errorf("failed to open log file: %w", err)
+		}
+		w = io.MultiWriter(os.Stdout, logFile)
+	}
+
 	level := new(slog.LevelVar)
 	level.Set(slog.LevelInfo)
 
@@ -46,7 +57,7 @@ func newLogger(debugMode, jsonOutput bool) *slog.Logger {
 	switch {
 	case jsonOutput:
 		handler = slog.NewJSONHandler(w, slogHandlerOpts)
-	case !isatty.IsTerminal(w.Fd()):
+	case !isatty.IsTerminal(os.Stdout.Fd()):
 		handler = slog.NewTextHandler(w, slogHandlerOpts)
 	default:
 		l := log.InfoLevel
@@ -58,5 +69,5 @@ func newLogger(debugMode, jsonOutput bool) *slog.Logger {
 			ReportCaller: debugMode,
 		})
 	}
-	return slog.New(handler)
+	return slog.New(handler), nil
 }

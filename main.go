@@ -38,6 +38,7 @@ func main() {
 	var version bool
 	var configCheckMode bool
 	var jsonOutput bool
+	var logFileName string
 	cli := cliOptions{}
 	flag.BoolVar(&cli.debugMode, "debug", false, "Enable DEBUG mode")
 	flag.StringVar(&cli.listen, "listen", "127.0.0.1:8000", "listen address")
@@ -45,6 +46,7 @@ func main() {
 	flag.StringVar(&cli.configFilename, "config", "", "config file to use")
 	flag.BoolVar(&cli.accessLog, "access-log", false, "turn on access logging if no reverse proxy is used")
 	flag.BoolVar(&jsonOutput, "json", false, "output in json instead")
+	flag.StringVar(&logFileName, "logfile", "", "also log to log file (and to stdout)")
 	flag.BoolVar(&configCheckMode, "configcheck", false, "just check the config")
 	flag.BoolVar(&version, "version", false, "show version")
 	flag.Parse()
@@ -59,9 +61,12 @@ func main() {
 		os.Exit(0)
 	}
 
-	logger := newLogger(cli.debugMode, jsonOutput)
+	logger, err := newLogger(cli.debugMode, jsonOutput, logFileName)
+	if err != nil {
+		fmt.Printf("Error creating logger: %v\n", err) // nolint: forbidigo
+		os.Exit(1)
+	}
 	ctx := context.Background()
-	var err error
 	if configCheckMode {
 		err = configCheck(cli.configFilename)
 	} else {
