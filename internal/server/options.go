@@ -24,3 +24,7 @@ func WithDebug(d bool) OptionsServerFunc {
 func WithMetrics(m *metrics.Metrics) OptionsServerFunc {
 	return func(c *server) { c.metrics = m }
 }
+
+func WithAccessLog() OptionsServerFunc {
+	return func(c *server) { c.accessLog = true }
+}

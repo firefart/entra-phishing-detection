@@ -22,22 +22,28 @@ import (
 	"go.uber.org/automaxprocs/maxprocs"
 )
 
+type cliOptions struct {
+	debugMode      bool
+	configFilename string
+	accessLog      bool
+	listen         string
+	listenMetrics  string
+}
+
 func main() {
 	if _, err := maxprocs.Set(); err != nil {
 		panic(fmt.Sprintf("Error on gomaxprocs: %v\n", err))
 	}
 
-	var debugMode bool
-	var configFilename string
-	var jsonOutput bool
 	var version bool
 	var configCheckMode bool
-	var listen string
-	var listenMetrics string
-	flag.BoolVar(&debugMode, "debug", false, "Enable DEBUG mode")
-	flag.StringVar(&listen, "listen", "127.0.0.1:8000", "listen address")
-	flag.StringVar(&listenMetrics, "listen-metrics", "127.0.0.1:8001", "listen address")
-	flag.StringVar(&configFilename, "config", "", "config file to use")
+	var jsonOutput bool
+	cli := cliOptions{}
+	flag.BoolVar(&cli.debugMode, "debug", false, "Enable DEBUG mode")
+	flag.StringVar(&cli.listen, "listen", "127.0.0.1:8000", "listen address")
+	flag.StringVar(&cli.listenMetrics, "listen-metrics", "127.0.0.1:8001", "listen address")
+	flag.StringVar(&cli.configFilename, "config", "", "config file to use")
+	flag.BoolVar(&cli.accessLog, "access-log", false, "turn on access logging if no reverse proxy is used")
 	flag.BoolVar(&jsonOutput, "json", false, "output in json instead")
 	flag.BoolVar(&configCheckMode, "configcheck", false, "just check the config")
 	flag.BoolVar(&version, "version", false, "show version")
@@ -53,13 +59,13 @@ func main() {
 		os.Exit(0)
 	}
 
-	logger := newLogger(debugMode, jsonOutput)
+	logger := newLogger(cli.debugMode, jsonOutput)
 	ctx := context.Background()
 	var err error
 	if configCheckMode {
-		err = configCheck(configFilename)
+		err = configCheck(cli.configFilename)
 	} else {
-		err = run(ctx, logger, configFilename, debugMode, listen, listenMetrics)
+		err = run(ctx, logger, cli)
 	}
 
 	if err != nil {
@@ -82,15 +88,15 @@ func configCheck(configFilename string) error {
 	return err
 }
 
-func run(ctx context.Context, logger *slog.Logger, configFilename string, debugMode bool, listen string, listenMetrics string) error {
+func run(ctx context.Context, logger *slog.Logger, cliOptions cliOptions) error {
 	ctx, cancel := signal.NotifyContext(ctx, os.Interrupt, syscall.SIGTERM, syscall.SIGINT)
 	defer cancel()
 
-	if configFilename == "" {
+	if cliOptions.configFilename == "" {
 		return errors.New("please provide a config file")
 	}
 
-	configuration, err := config.GetConfig(configFilename)
+	configuration, err := config.GetConfig(cliOptions.configFilename)
 	if err != nil {
 		return err
 	}
@@ -104,14 +110,18 @@ func run(ctx context.Context, logger *slog.Logger, configFilename string, debugM
 	options := []server.OptionsServerFunc{
 		server.WithLogger(logger),
 		server.WithConfig(configuration),
-		server.WithDebug(debugMode),
+		server.WithDebug(cliOptions.debugMode),
 		server.WithMetrics(m),
+	}
+
+	if cliOptions.accessLog {
+		options = append(options, server.WithAccessLog())
 	}
 
 	s := server.NewServer(options...)
 
 	srv := &nethttp.Server{
-		Addr:         listen,
+		Addr:         cliOptions.listen,
 		Handler:      s,
 		ReadTimeout:  configuration.Timeout,
 		WriteTimeout: configuration.Timeout,
@@ -119,10 +129,10 @@ func run(ctx context.Context, logger *slog.Logger, configFilename string, debugM
 
 	go func() {
 		logger.Info("Starting server",
-			slog.String("host", listen),
+			slog.String("host", cliOptions.listen),
 			slog.Duration("gracefultimeout", configuration.Server.GracefulTimeout),
 			slog.Duration("timeout", configuration.Timeout),
-			slog.Bool("debug", debugMode),
+			slog.Bool("debug", cliOptions.debugMode),
 		)
 
 		if err := srv.ListenAndServe(); err != nil && !errors.Is(err, nethttp.ErrServerClosed) {
@@ -135,7 +145,7 @@ func run(ctx context.Context, logger *slog.Logger, configFilename string, debugM
 	muxMetrics := nethttp.NewServeMux()
 	muxMetrics.Handle("/metrics", promhttp.HandlerFor(reg, promhttp.HandlerOpts{Registry: reg}))
 	srvMetrics := &nethttp.Server{
-		Addr:         listenMetrics,
+		Addr:         cliOptions.listenMetrics,
 		Handler:      muxMetrics,
 		ReadTimeout:  configuration.Timeout,
 		WriteTimeout: configuration.Timeout,
@@ -143,7 +153,7 @@ func run(ctx context.Context, logger *slog.Logger, configFilename string, debugM
 
 	go func() {
 		logger.Info("Starting metrics server",
-			slog.String("host", listenMetrics),
+			slog.String("host", cliOptions.listenMetrics),
 		)
 		if err := srvMetrics.ListenAndServe(); err != nil && !errors.Is(err, nethttp.ErrServerClosed) {
 			logger.Error("error on metrics listenandserve", slog.String("err", err.Error()))

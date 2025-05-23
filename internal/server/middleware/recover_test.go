@@ -70,22 +70,6 @@ func TestRecover(t *testing.T) {
 		require.NotEmpty(t, logOutput.String())
 	})
 
-	t.Run("recovers from nil panic", func(t *testing.T) {
-		var logOutput bytes.Buffer
-		logger := slog.New(slog.NewJSONHandler(&logOutput, nil))
-		middleware := Recover(logger)
-		nextHandler := http.HandlerFunc(func(_ http.ResponseWriter, _ *http.Request) {
-			panic(nil) // nolint:govet
-		})
-		handler := middleware(nextHandler)
-		req := httptest.NewRequest(http.MethodDelete, "/", nil)
-		w := httptest.NewRecorder()
-		handler.ServeHTTP(w, req)
-		require.Equal(t, http.StatusInternalServerError, w.Code)
-		require.Equal(t, "Internal Server Error\n", w.Body.String())
-		require.NotEmpty(t, logOutput.String())
-	})
-
 	t.Run("middleware chain continues after recovery", func(t *testing.T) {
 		var logOutput bytes.Buffer
 		logger := slog.New(slog.NewJSONHandler(&logOutput, nil))

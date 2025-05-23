@@ -15,10 +15,11 @@ import (
 )
 
 type server struct {
-	logger  *slog.Logger
-	config  config.Configuration
-	debug   bool
-	metrics *metrics.Metrics
+	logger    *slog.Logger
+	config    config.Configuration
+	debug     bool
+	metrics   *metrics.Metrics
+	accessLog bool
 }
 
 func notFound(w http.ResponseWriter, _ *http.Request) error {
@@ -58,6 +59,9 @@ func NewServer(opts ...OptionsServerFunc) http.Handler {
 
 	r.Use(middleware.Recover(s.logger))
 	r.Use(middleware.RealIP(s.config.Server.IPHeader))
+	if s.accessLog {
+		r.Use(middleware.Logging(middleware.LoggingConfig{Logger: s.logger}))
+	}
 
 	imageRoute := "/image"
 	if s.config.Server.PathImage != "" {
