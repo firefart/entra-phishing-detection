@@ -13,12 +13,12 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestLogging(t *testing.T) {
+func TestAccessLog(t *testing.T) {
 	t.Run("logs successful request", func(t *testing.T) {
 		var logOutput bytes.Buffer
 		logger := slog.New(slog.NewJSONHandler(&logOutput, nil))
 
-		middleware := Logging(LoggingConfig{Logger: logger})
+		middleware := AccessLog(AccessLogConfig{Logger: logger})
 
 		nextHandler := http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 			w.WriteHeader(http.StatusOK)
@@ -66,7 +66,7 @@ func TestLogging(t *testing.T) {
 		var logOutput bytes.Buffer
 		logger := slog.New(slog.NewJSONHandler(&logOutput, nil))
 
-		middleware := Logging(LoggingConfig{Logger: logger})
+		middleware := AccessLog(AccessLogConfig{Logger: logger})
 
 		nextHandler := http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 			w.WriteHeader(http.StatusNotFound)
@@ -94,7 +94,7 @@ func TestLogging(t *testing.T) {
 		var logOutput bytes.Buffer
 		logger := slog.New(slog.NewJSONHandler(&logOutput, nil))
 
-		middleware := Logging(LoggingConfig{Logger: logger})
+		middleware := AccessLog(AccessLogConfig{Logger: logger})
 
 		nextHandler := http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 			w.WriteHeader(http.StatusOK)
@@ -121,7 +121,7 @@ func TestLogging(t *testing.T) {
 		var logOutput bytes.Buffer
 		logger := slog.New(slog.NewJSONHandler(&logOutput, nil))
 
-		middleware := Logging(LoggingConfig{Logger: logger})
+		middleware := AccessLog(AccessLogConfig{Logger: logger})
 
 		nextHandler := http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 			w.WriteHeader(http.StatusOK)
@@ -148,7 +148,7 @@ func TestLogging(t *testing.T) {
 		var logOutput bytes.Buffer
 		logger := slog.New(slog.NewJSONHandler(&logOutput, nil))
 
-		middleware := Logging(LoggingConfig{Logger: logger})
+		middleware := AccessLog(AccessLogConfig{Logger: logger})
 
 		nextHandler := http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 			time.Sleep(10 * time.Millisecond) // Small delay for testing
@@ -175,7 +175,7 @@ func TestLogging(t *testing.T) {
 
 	t.Run("panics without logger", func(t *testing.T) {
 		require.Panics(t, func() {
-			Logging(LoggingConfig{})
+			AccessLog(AccessLogConfig{})
 		})
 	})
 
@@ -183,7 +183,7 @@ func TestLogging(t *testing.T) {
 		var logOutput bytes.Buffer
 		logger := slog.New(slog.NewJSONHandler(&logOutput, nil))
 
-		middleware := Logging(LoggingConfig{Logger: logger})
+		middleware := AccessLog(AccessLogConfig{Logger: logger})
 
 		nextHandler := http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 			// Don't explicitly set status code, should default to 200

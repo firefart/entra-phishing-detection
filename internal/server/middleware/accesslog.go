@@ -33,15 +33,15 @@ func (rw *responseWriter) Write(data []byte) (int, error) {
 	return n, err
 }
 
-// LoggingConfig holds configuration for the logging middleware
-type LoggingConfig struct {
+// AccessLogConfig holds configuration for the accesslog middleware
+type AccessLogConfig struct {
 	Logger *slog.Logger
 }
 
-// Logging creates a middleware that logs all HTTP requests with detailed information
-func Logging(config LoggingConfig) func(next http.Handler) http.Handler {
+// AccessLog creates a middleware that logs all HTTP requests with detailed information
+func AccessLog(config AccessLogConfig) func(next http.Handler) http.Handler {
 	if config.Logger == nil {
-		panic("logging middleware requires a logger")
+		panic("accesslog middleware requires a logger")
 	}
 
 	return func(next http.Handler) http.Handler {

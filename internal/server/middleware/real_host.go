@@ -8,8 +8,8 @@ import (
 
 const ContextKeyHost ContextKey = "host"
 
-// HostConfig contains configuration for the host middleware
-type HostConfig struct {
+// RealHostConfig contains configuration for the host middleware
+type RealHostConfig struct {
 	// Headers is a list of headers to check for the host value, in order of preference
 	Headers []string
 }
@@ -28,8 +28,8 @@ func getHostFromHeaders(headers []string, r *http.Request) string {
 	return r.Host
 }
 
-// Host middleware sets the correct host header based on proxy headers
-func Host(config HostConfig) func(next http.Handler) http.Handler {
+// RealHost middleware sets the correct host header based on proxy headers
+func RealHost(config RealHostConfig) func(next http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			host := getHostFromHeaders(config.Headers, r)
