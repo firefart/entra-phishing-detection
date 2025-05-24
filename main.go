@@ -61,11 +61,21 @@ func main() {
 		os.Exit(0)
 	}
 
-	logger, err := newLogger(cli.debugMode, jsonOutput, logFileName)
-	if err != nil {
-		fmt.Printf("Error creating logger: %v\n", err) // nolint: forbidigo
-		os.Exit(1)
+	var logger *slog.Logger
+	var err error
+	if logFileName == "" {
+		logFile, err := os.OpenFile(logFileName, os.O_RDWR|os.O_CREATE|os.O_APPEND, 0o666)
+		if err != nil {
+			fmt.Printf("Error opening log file: %v\n", err) // nolint: forbidigo
+			os.Exit(1)
+		}
+		defer logFile.Close()
+
+		logger = newLogger(cli.debugMode, jsonOutput, logFile)
+	} else {
+		logger = newLogger(cli.debugMode, jsonOutput, nil)
 	}
+
 	ctx := context.Background()
 	if configCheckMode {
 		err = configCheck(cli.configFilename)
@@ -80,11 +90,11 @@ func main() {
 			for _, e := range merr.Errors {
 				logger.Error(e.Error())
 			}
-			os.Exit(1)
+			os.Exit(1) // nolint: gocritic
 		}
 		// a normal error
 		logger.Error(err.Error())
-		os.Exit(1)
+		os.Exit(1) // nolint: gocritic
 	}
 }
 

@@ -1,7 +1,6 @@
 package main
 
 import (
-	"fmt"
 	"io"
 	"log/slog"
 	"os"
@@ -11,14 +10,10 @@ import (
 	"github.com/mattn/go-isatty"
 )
 
-func newLogger(debugMode, jsonOutput bool, logFileName string) (*slog.Logger, error) {
+func newLogger(debugMode, jsonOutput bool, logFile io.Writer) *slog.Logger {
 	var w io.Writer
 	w = os.Stdout
-	if logFileName != "" {
-		logFile, err := os.OpenFile(logFileName, os.O_RDWR|os.O_CREATE|os.O_APPEND, 0o666)
-		if err != nil {
-			return nil, fmt.Errorf("failed to open log file: %w", err)
-		}
+	if logFile != nil {
 		w = io.MultiWriter(os.Stdout, logFile)
 	}
 
@@ -69,5 +64,5 @@ func newLogger(debugMode, jsonOutput bool, logFileName string) (*slog.Logger, er
 			ReportCaller: debugMode,
 		})
 	}
-	return slog.New(handler), nil
+	return slog.New(handler)
 }
