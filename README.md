@@ -49,17 +49,18 @@ Use `--help` to show all available flags and default values
 
 ## config.json
 
-| Value                          | Description                                                                                                                                          |
-| ------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------- |
-| server.graceful_timeout        | graceful timeout when stopping the server                                                                                                            |
-| server.secret_key_header_name  | used for the middleware to secure the version endpoint. Header name that must be included                                                            |
-| server.secret_key_header_value | The corresponding header value to secret_key_header_name                                                                                             |
-| server.ip_header               | If you are running behind a reverse proxy, set this header to the custom IP-header and make sure it's only from trusted proxies (via your Caddyfile) |
-| server.path_image              | Path to the image url. Should be a random url like a GUID otherwise scanners will trigger your app easily. Please exclude the leading slash          |
-| server.path_health             | Path to the health check url (need to match the .env file)                                                                                           |
-| server.path_version            | Path to the version endpoint                                                                                                                         |
-| timeout                        | general request timeout                                                                                                                              |
-| allowed_origins                | array of hostnames that are valid. Defaults to login.microsoftonline.com                                                                             |
+| Value                          | Description                                                                                                                                                                                 |
+| ------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| server.graceful_timeout        | graceful timeout when stopping the server                                                                                                                                                   |
+| server.secret_key_header_name  | used for the middleware to secure the version endpoint. Header name that must be included                                                                                                   |
+| server.secret_key_header_value | The corresponding header value to secret_key_header_name                                                                                                                                    |
+| server.ip_header               | If you are running behind a reverse proxy, set this header to the custom IP-header and make sure it's only from trusted proxies (via your Caddyfile)                                        |
+| server.host_headers            | Array of headers to check for the host value, in order of preference (e.g. ["X-Forwarded-Host", "X-Original-Host"]). Leave empty when not exposed via a correctly configured reverse proxy. |
+| server.path_image              | Path to the image url. Should be a random url like a GUID otherwise scanners will trigger your app easily. Please exclude the leading slash                                                 |
+| server.path_health             | Path to the health check url (need to match the .env file)                                                                                                                                  |
+| server.path_version            | Path to the version endpoint                                                                                                                                                                |
+| timeout                        | general request timeout                                                                                                                                                                     |
+| allowed_origins                | array of hostnames that are valid. Defaults to login.microsoftonline.com                                                                                                                    |
 
 ## .env
 
