@@ -63,7 +63,7 @@ func main() {
 
 	var logger *slog.Logger
 	var err error
-	if logFileName == "" {
+	if logFileName != "" {
 		logFile, err := os.OpenFile(logFileName, os.O_RDWR|os.O_CREATE|os.O_APPEND, 0o666)
 		if err != nil {
 			fmt.Printf("Error opening log file: %v\n", err) // nolint: forbidigo
