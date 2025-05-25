@@ -1,11 +1,4 @@
-package templates
-
-templ ImageOK() {
-	<svg viewBox="0 0 1 1" xmlns="http://www.w3.org/2000/svg" xml:space="preserve" style="fill-rule:evenodd;clip-rule:evenodd;stroke-linejoin:round;stroke-miterlimit:2"></svg>
-}
-
-templ ImageNOK() {
-	<svg viewBox="0 0 1834 1409" xmlns="http://www.w3.org/2000/svg" xml:space="preserve" style="fill-rule:evenodd;clip-rule:evenodd;stroke-miterlimit:3">
+<svg viewBox="0 0 1834 1409" xmlns="http://www.w3.org/2000/svg" xml:space="preserve" style="fill-rule:evenodd;clip-rule:evenodd;stroke-miterlimit:3">
 		<path style="fill:url(#a);fill-rule:nonzero" d="M0 0h440v338H0z" transform="scale(4.16667)"></path>
 		<path d="M2.35 84.42 45.28 10.2l.17-.27a23 23 0 0 1 7.05-7.24A17 17 0 0 1 61.57 0a16.7 16.7 0 0 1 9.11 2.69 22.8 22.8 0 0 1 7 7.26q.19.32.36.63l42.23 73.34.24.44a22.5 22.5 0 0 1 2.37 10.19 17.6 17.6 0 0 1-2.17 8.35 15.94 15.94 0 0 1-6.93 6.6c-.19.1-.39.18-.58.26a21.2 21.2 0 0 1-9.11 1.75H16.96a18.1 18.1 0 0 1-6.2-1.15A16.43 16.43 0 0 1 3 104.24a17.54 17.54 0 0 1-3-9.57 23 23 0 0 1 1.57-8.74c.2-.53.458-1.037.77-1.51z" style="fill:#cf1f25;fill-rule:nonzero" transform="translate(222.404 46.342)scale(11.56143)"></path>
 		<path d="m9 88.75 43.12-74.59c5.24-8.25 13.54-8.46 18.87 0l42.43 73.69c3.39 6.81 1.71 16-9.33 15.77H17.61c-7.26.18-11.94-6.19-8.61-14.87" style="fill:#fec901" transform="translate(222.404 46.342)scale(11.56143)"></path>
@@ -31,4 +24,3 @@ templ ImageNOK() {
 			</linearGradient>
 		</defs>
 	</svg>
-}

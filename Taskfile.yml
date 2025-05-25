@@ -9,33 +9,24 @@ tasks:
       - go mod tidy -v
 
   update:
-    deps: [generate]
     cmds:
       - go get -u
       - go get -u tool
       - go mod tidy -v
 
-  generate:
-    deps: [templ]
-
-  templ:
-    cmds:
-      - go tool templ generate
-
   build:
     aliases: [default]
-    deps: [deps, generate]
+    deps: [deps]
     env:
       CGO_ENABLED: 0
     cmds:
       - go fmt ./...
       - go tool gofumpt -l -w .
-      - go tool templ fmt .
       - go vet ./...
       - go build -o {{.PROGRAM}}
 
   test:
-    deps: [deps, generate]
+    deps: [deps]
     env:
       CGO_ENABLED: 1
     cmds:

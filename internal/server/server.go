@@ -88,7 +88,13 @@ func NewServer(opts ...OptionsServerFunc) http.Handler {
 	s.logger.Info("version route", slog.String("route", versionRoute))
 
 	// image generation route
-	r.HandleFunc(fmt.Sprintf("GET %s", imageRoute), handlers.NewImageHandler(s.config, s.metrics, s.logger).Handler)
+	r.HandleFunc(fmt.Sprintf("GET %s", imageRoute), handlers.NewImageHandler(handlers.ImageHandlerOptions{
+		AllowedOrigins: s.config.AllowedOrigins,
+		Logger:         s.logger,
+		Metrics:        s.metrics,
+		ImageOK:        imageOK,
+		ImagePhishing:  imagePhishing,
+	}).Handler)
 	// health check for monitoring
 	r.HandleFunc(fmt.Sprintf("GET %s", healthRoute), handlers.NewHealthHandler().Handler)
 	// version info secured by secret key header

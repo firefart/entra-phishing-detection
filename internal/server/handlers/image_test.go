@@ -14,8 +14,6 @@ import (
 )
 
 func TestImage(t *testing.T) {
-	patternOK := `viewBox="0 0 1 1"`
-	patternPhishing := `NUNG: GEBEN SIE HIER`
 	configuration := config.Configuration{
 		Server: config.Server{
 			SecretKeyHeaderName:  "X-Secret-Key",
@@ -26,8 +24,13 @@ func TestImage(t *testing.T) {
 	logger := slog.New(slog.DiscardHandler)
 	m, err := metrics.NewMetrics(prometheus.NewRegistry())
 	require.NoError(t, err)
-	imageHandler := handlers.NewImageHandler(configuration, m, logger)
-
+	imageHandler := handlers.NewImageHandler(handlers.ImageHandlerOptions{
+		AllowedOrigins: configuration.AllowedOrigins,
+		Logger:         logger,
+		Metrics:        m,
+		ImageOK:        []byte("imageOK"),
+		ImagePhishing:  []byte("imagePhishing"),
+	})
 	req := httptest.NewRequest(http.MethodGet, "/", nil)
 	rec := httptest.NewRecorder()
 
@@ -39,8 +42,7 @@ func TestImage(t *testing.T) {
 	require.Equal(t, "no-store", rec.Header().Get("Cache-Control"))
 	require.Equal(t, "no-cache", rec.Header().Get("Pragma"))
 	require.Equal(t, "*", rec.Header().Get("Access-Control-Allow-Origin"))
-	require.Greater(t, len(rec.Body.String()), 10)
-	require.Contains(t, rec.Body.String(), patternPhishing)
+	require.Equal(t, "imagePhishing", rec.Body.String())
 
 	// test with wrong referer
 	req = httptest.NewRequest(http.MethodGet, "/", nil)
@@ -48,7 +50,7 @@ func TestImage(t *testing.T) {
 	rec = httptest.NewRecorder()
 	require.NoError(t, imageHandler.Handler(rec, req))
 	require.Equal(t, http.StatusOK, rec.Code)
-	require.Contains(t, rec.Body.String(), patternPhishing)
+	require.Equal(t, "imagePhishing", rec.Body.String())
 
 	// test with invalid referer
 	req = httptest.NewRequest(http.MethodGet, "/", nil)
@@ -56,7 +58,7 @@ func TestImage(t *testing.T) {
 	rec = httptest.NewRecorder()
 	require.NoError(t, imageHandler.Handler(rec, req))
 	require.Equal(t, http.StatusOK, rec.Code)
-	require.Contains(t, rec.Body.String(), patternPhishing)
+	require.Equal(t, "imagePhishing", rec.Body.String())
 
 	// test with correct referer
 	req = httptest.NewRequest(http.MethodGet, "/", nil)
@@ -64,5 +66,5 @@ func TestImage(t *testing.T) {
 	rec = httptest.NewRecorder()
 	require.NoError(t, imageHandler.Handler(rec, req))
 	require.Equal(t, http.StatusOK, rec.Code)
-	require.Contains(t, rec.Body.String(), patternOK)
+	require.Equal(t, "imageOK", rec.Body.String())
 }

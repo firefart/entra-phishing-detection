@@ -1,25 +1,22 @@
 package handlers
 
 import (
+	"fmt"
 	"log/slog"
 	"net/http"
 	"net/url"
 	"slices"
 	"strings"
 
-	"github.com/firefart/entra-phishing-detection/internal/config"
 	"github.com/firefart/entra-phishing-detection/internal/metrics"
 	"github.com/firefart/entra-phishing-detection/internal/server/middleware"
-	"github.com/firefart/entra-phishing-detection/internal/server/templates"
 )
 
 // ImageHandler handles requests for the phishing detection image endpoint.
 // It analyzes the HTTP Referer header to determine if the request originates
 // from a legitimate Microsoft login page.
 type ImageHandler struct {
-	config  config.Configuration
-	logger  *slog.Logger
-	metrics *metrics.Metrics
+	ImageHandlerOptions
 }
 
 const (
@@ -29,11 +26,34 @@ const (
 	reasonAllowedReferer        = "referer allowed"
 )
 
-func NewImageHandler(c config.Configuration, m *metrics.Metrics, logger *slog.Logger) *ImageHandler {
+type ImageHandlerOptions struct {
+	// CAllowedOrigins holds the hostnames of the allowed referers
+	AllowedOrigins []string
+	// Metrics holds the metrics instance for tracking image hits.
+	Metrics *metrics.Metrics
+	// Logger is the logger instance for logging events.
+	Logger *slog.Logger
+	// ImageOK is the SVG content to return for safe URLs.
+	ImageOK []byte
+	// ImagePhishing is the SVG content to return for phishing attempts.
+	ImagePhishing []byte
+}
+
+func NewImageHandler(opts ImageHandlerOptions) *ImageHandler {
+	if opts.Logger == nil {
+		panic("logger cannot be nil")
+	}
+	if opts.Metrics == nil {
+		panic("metrics cannot be nil")
+	}
+	if len(opts.ImageOK) == 0 {
+		panic("imageOK cannot be nil or empty")
+	}
+	if len(opts.ImagePhishing) == 0 {
+		panic("imagePhishing cannot be nil or empty")
+	}
 	return &ImageHandler{
-		config:  c,
-		logger:  logger,
-		metrics: m,
+		ImageHandlerOptions: opts,
 	}
 }
 
@@ -49,19 +69,27 @@ func (h *ImageHandler) phishingAttempt(w http.ResponseWriter, r *http.Request, r
 		i++
 	}
 
-	h.logger.With(slog.String("reason", reason), slog.String("remote_ip", ip), slog.String("host", r.Host)).WithGroup("headers").Warn("phishing attempt detected", header...)
+	h.Logger.With(slog.String("reason", reason), slog.String("remote_ip", ip), slog.String("host", r.Host)).WithGroup("headers").Warn("phishing attempt detected", header...)
 
-	h.metrics.ImageHits.WithLabelValues(r.Host, reason).Inc()
+	h.Metrics.ImageHits.WithLabelValues(r.Host, reason).Inc()
 
 	w.WriteHeader(http.StatusOK)
-	return templates.ImageNOK().Render(r.Context(), w)
+	_, err := w.Write(h.ImagePhishing)
+	if err != nil {
+		return fmt.Errorf("failed to write phishing image response: %w", err)
+	}
+	return nil
 }
 
 func (h *ImageHandler) safeURL(w http.ResponseWriter, r *http.Request) error {
-	h.metrics.ImageHits.WithLabelValues(r.Host, reasonAllowedReferer).Inc()
+	h.Metrics.ImageHits.WithLabelValues(r.Host, reasonAllowedReferer).Inc()
 
 	w.WriteHeader(http.StatusOK)
-	return templates.ImageOK().Render(r.Context(), w)
+	_, err := w.Write(h.ImageOK)
+	if err != nil {
+		return fmt.Errorf("failed to write ok image response: %w", err)
+	}
+	return nil
 }
 
 // Handler processes image requests and returns different SVG content
@@ -83,7 +111,7 @@ func (h *ImageHandler) Handler(w http.ResponseWriter, r *http.Request) error {
 	if err != nil {
 		return h.phishingAttempt(w, r, reasonInvalidReferer)
 	}
-	if slices.Contains(h.config.AllowedOrigins, parsed.Hostname()) {
+	if slices.Contains(h.AllowedOrigins, parsed.Hostname()) {
 		return h.safeURL(w, r)
 	}
 	return h.phishingAttempt(w, r, reasonRefererNotWhitelisted)
