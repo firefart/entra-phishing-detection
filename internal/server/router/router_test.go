@@ -1,9 +1,13 @@
 package router
 
 import (
+	"errors"
 	"net/http"
 	"net/http/httptest"
 	"testing"
+
+	"github.com/firefart/entra-phishing-detection/internal/server/httperror"
+	"github.com/stretchr/testify/require"
 )
 
 func TestRouter(t *testing.T) {
@@ -148,4 +152,165 @@ func TestRouter(t *testing.T) {
 			t.Errorf("%s %s: middleware used: expected %q; got %q", test.RequestMethod, test.RequestPath, test.ExpectedUsed, used)
 		}
 	}
+}
+
+func TestDefaultErrorHandler(t *testing.T) {
+	w := httptest.NewRecorder()
+	req := httptest.NewRequest(http.MethodGet, "/", nil)
+
+	// Test with HTTPError
+	httpErr := &httperror.HTTPError{
+		Err:        errors.New("test http error"),
+		StatusCode: http.StatusBadRequest,
+	}
+	defaultErrorHandler(w, req, httpErr)
+	require.Equal(t, http.StatusBadRequest, w.Code)
+	require.Contains(t, w.Body.String(), "test http error")
+
+	// Test with regular error
+	w = httptest.NewRecorder()
+	regularErr := errors.New("regular error")
+	defaultErrorHandler(w, req, regularErr)
+	require.Equal(t, http.StatusInternalServerError, w.Code)
+	require.Contains(t, w.Body.String(), "regular error")
+}
+
+func TestSetErrorHandler(t *testing.T) {
+	r := New()
+
+	// Custom error handler
+	customCalled := false
+	customErrorHandler := func(w http.ResponseWriter, _ *http.Request, _ error) {
+		customCalled = true
+		w.WriteHeader(http.StatusTeapot)
+		w.Write([]byte("custom error"))
+	}
+
+	r.SetErrorHandler(customErrorHandler)
+
+	// Handler that returns an error
+	r.HandleFunc("GET /error", func(_ http.ResponseWriter, _ *http.Request) error {
+		return errors.New("test error")
+	})
+
+	req := httptest.NewRequest(http.MethodGet, "/error", nil)
+	w := httptest.NewRecorder()
+	r.ServeHTTP(w, req)
+
+	require.True(t, customCalled)
+	require.Equal(t, http.StatusTeapot, w.Code)
+	require.Equal(t, "custom error", w.Body.String())
+}
+
+func TestHandlerFuncWrapper(t *testing.T) {
+	r := New()
+
+	// Handler that succeeds
+	r.HandleFunc("GET /success", func(w http.ResponseWriter, _ *http.Request) error {
+		w.WriteHeader(http.StatusOK)
+		w.Write([]byte("success"))
+		return nil
+	})
+
+	req := httptest.NewRequest(http.MethodGet, "/success", nil)
+	w := httptest.NewRecorder()
+	r.ServeHTTP(w, req)
+
+	require.Equal(t, http.StatusOK, w.Code)
+	require.Equal(t, "success", w.Body.String())
+
+	// Handler that returns error
+	r.HandleFunc("GET /error", func(_ http.ResponseWriter, _ *http.Request) error {
+		return httperror.BadRequest("bad request")
+	})
+
+	req = httptest.NewRequest(http.MethodGet, "/error", nil)
+	w = httptest.NewRecorder()
+	r.ServeHTTP(w, req)
+
+	require.Equal(t, http.StatusBadRequest, w.Code)
+	require.Contains(t, w.Body.String(), "bad request")
+}
+
+func TestHandle(t *testing.T) {
+	r := New()
+
+	// Test using Handle directly with http.Handler
+	handler := http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		w.WriteHeader(http.StatusOK)
+		w.Write([]byte("direct handler"))
+	})
+
+	r.Handle("GET /direct", handler)
+
+	req := httptest.NewRequest(http.MethodGet, "/direct", nil)
+	w := httptest.NewRecorder()
+	r.ServeHTTP(w, req)
+
+	require.Equal(t, http.StatusOK, w.Code)
+	require.Equal(t, "direct handler", w.Body.String())
+}
+
+func TestEmptyMiddlewareChain(t *testing.T) {
+	r := New()
+
+	r.HandleFunc("GET /", func(w http.ResponseWriter, _ *http.Request) error {
+		w.WriteHeader(http.StatusOK)
+		w.Write([]byte("no middleware"))
+		return nil
+	})
+
+	req := httptest.NewRequest(http.MethodGet, "/", nil)
+	w := httptest.NewRecorder()
+	r.ServeHTTP(w, req)
+
+	require.Equal(t, http.StatusOK, w.Code)
+	require.Equal(t, "no middleware", w.Body.String())
+}
+
+func TestComplexMiddlewareOrdering(t *testing.T) {
+	r := New()
+	var calls []string
+
+	// Create middleware that records call order
+	createMW := func(name string) func(http.Handler) http.Handler {
+		return func(next http.Handler) http.Handler {
+			return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				calls = append(calls, name+"-before")
+				next.ServeHTTP(w, r)
+				calls = append(calls, name+"-after")
+			})
+		}
+	}
+
+	// Add global middleware
+	r.Use(createMW("global1"), createMW("global2"))
+
+	// Create a group with additional middleware
+	r.Group(func(r *Router) {
+		r.Use(createMW("group1"), createMW("group2"))
+
+		// Nested group
+		r.Group(func(r *Router) {
+			r.Use(createMW("nested1"))
+			r.HandleFunc("GET /nested", func(_ http.ResponseWriter, _ *http.Request) error {
+				calls = append(calls, "handler")
+				return nil
+			})
+		})
+	})
+
+	req := httptest.NewRequest(http.MethodGet, "/nested", nil)
+	w := httptest.NewRecorder()
+	r.ServeHTTP(w, req)
+
+	expectedCalls := []string{
+		"global1-before", "global2-before",
+		"group1-before", "group2-before", "nested1-before",
+		"handler",
+		"nested1-after", "group2-after", "group1-after",
+		"global2-after", "global1-after",
+	}
+
+	require.Equal(t, expectedCalls, calls)
 }

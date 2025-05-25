@@ -68,3 +68,65 @@ func TestImage(t *testing.T) {
 	require.Equal(t, http.StatusOK, rec.Code)
 	require.Equal(t, "imageOK", rec.Body.String())
 }
+
+func TestNewImageHandlerPanics(t *testing.T) {
+	logger := slog.New(slog.DiscardHandler)
+	m, err := metrics.NewMetrics(prometheus.NewRegistry())
+	require.NoError(t, err)
+
+	validOpts := handlers.ImageHandlerOptions{
+		AllowedOrigins: []string{"example.com"},
+		Logger:         logger,
+		Metrics:        m,
+		ImageOK:        []byte("ok"),
+		ImagePhishing:  []byte("phishing"),
+	}
+
+	t.Run("nil logger panics", func(t *testing.T) {
+		opts := validOpts
+		opts.Logger = nil
+		require.Panics(t, func() {
+			handlers.NewImageHandler(opts)
+		})
+	})
+
+	t.Run("nil metrics panics", func(t *testing.T) {
+		opts := validOpts
+		opts.Metrics = nil
+		require.Panics(t, func() {
+			handlers.NewImageHandler(opts)
+		})
+	})
+
+	t.Run("empty ImageOK panics", func(t *testing.T) {
+		opts := validOpts
+		opts.ImageOK = []byte{}
+		require.Panics(t, func() {
+			handlers.NewImageHandler(opts)
+		})
+	})
+
+	t.Run("nil ImageOK panics", func(t *testing.T) {
+		opts := validOpts
+		opts.ImageOK = nil
+		require.Panics(t, func() {
+			handlers.NewImageHandler(opts)
+		})
+	})
+
+	t.Run("empty ImagePhishing panics", func(t *testing.T) {
+		opts := validOpts
+		opts.ImagePhishing = []byte{}
+		require.Panics(t, func() {
+			handlers.NewImageHandler(opts)
+		})
+	})
+
+	t.Run("nil ImagePhishing panics", func(t *testing.T) {
+		opts := validOpts
+		opts.ImagePhishing = nil
+		require.Panics(t, func() {
+			handlers.NewImageHandler(opts)
+		})
+	})
+}
