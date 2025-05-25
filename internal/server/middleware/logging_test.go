@@ -101,7 +101,7 @@ func TestLogging(t *testing.T) {
 		})
 
 		// Wrap with RealIP middleware first
-		realIPMiddleware := RealIP("X-Real-IP")
+		realIPMiddleware := RealIP(RealIPConfig{IPHeader: "X-Real-IP"})
 		handler := realIPMiddleware(middleware(nextHandler))
 
 		req := httptest.NewRequest(http.MethodGet, "/test", nil)

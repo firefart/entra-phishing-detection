@@ -13,13 +13,16 @@ import (
 	"github.com/firefart/entra-phishing-detection/internal/server/templates"
 )
 
+// ImageHandler handles requests for the phishing detection image endpoint.
+// It analyzes the HTTP Referer header to determine if the request originates
+// from a legitimate Microsoft login page.
 type ImageHandler struct {
 	config  config.Configuration
 	logger  *slog.Logger
 	metrics *metrics.Metrics
 }
 
-var (
+const (
 	reasonMissingReferer        = "missing referer"
 	reasonInvalidReferer        = "invalid referer"
 	reasonRefererNotWhitelisted = "referer not whitelisted"
@@ -61,6 +64,8 @@ func (h *ImageHandler) safeURL(w http.ResponseWriter, r *http.Request) error {
 	return templates.ImageOK().Render(r.Context(), w)
 }
 
+// Handler processes image requests and returns different SVG content
+// based on whether the request appears to be from a legitimate source.
 func (h *ImageHandler) Handler(w http.ResponseWriter, r *http.Request) error {
 	w.Header().Set("Content-Disposition", `inline; filename="image.svg"`)
 	w.Header().Set("Content-Type", "image/svg+xml")

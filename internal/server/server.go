@@ -58,7 +58,9 @@ func NewServer(opts ...OptionsServerFunc) http.Handler {
 	})
 
 	r.Use(middleware.Recover(s.logger))
-	r.Use(middleware.RealIP(s.config.Server.IPHeader))
+	r.Use(middleware.RealIP(middleware.RealIPConfig{
+		IPHeader: s.config.Server.IPHeader,
+	}))
 	if len(s.config.Server.HostHeaders) > 0 {
 		r.Use(middleware.Host(middleware.HostConfig{
 			Headers: s.config.Server.HostHeaders,
