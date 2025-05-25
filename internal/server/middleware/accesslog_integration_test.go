@@ -15,7 +15,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestLoggingMiddlewareIntegration(t *testing.T) {
+func TestAccessLogMiddlewareIntegration(t *testing.T) {
 	// Create a buffer to capture log output
 	var logOutput bytes.Buffer
 	logger := slog.New(slog.NewJSONHandler(&logOutput, &slog.HandlerOptions{
@@ -40,7 +40,7 @@ func TestLoggingMiddlewareIntegration(t *testing.T) {
 	m, err := metrics.NewMetrics(registry)
 	require.NoError(t, err)
 
-	// Create server with logging middleware
+	// Create server with accesslog middleware
 	handler := server.NewServer(
 		server.WithLogger(logger),
 		server.WithConfig(cfg),

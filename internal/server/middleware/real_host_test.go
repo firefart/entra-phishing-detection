@@ -7,7 +7,7 @@ import (
 )
 
 func TestHostMiddleware(t *testing.T) {
-	config := HostConfig{
+	config := RealHostConfig{
 		Headers: []string{"X-Forwarded-Host", "X-Original-Host"},
 	}
 
@@ -25,7 +25,7 @@ func TestHostMiddleware(t *testing.T) {
 	})
 
 	// Wrap with middleware
-	handler := Host(config)(testHandler)
+	handler := RealHost(config)(testHandler)
 
 	// Create request
 	req := httptest.NewRequest(http.MethodGet, "/", nil)
