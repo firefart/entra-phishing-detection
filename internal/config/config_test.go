@@ -182,6 +182,14 @@ func TestGetConfigWithHostHeaders(t *testing.T) {
 
 	c, err := GetConfig(tmpFilename)
 	require.NoError(t, err)
-
 	require.Equal(t, []string{"X-Forwarded-Host", "X-Original-Host"}, c.Server.HostHeaders)
+}
+
+func TestConfigWithEnvVars(t *testing.T) {
+	t.Setenv("ENTRA_SERVER_SECRET__KEY__HEADER__NAME", "X-XXXX")
+	t.Setenv("ENTRA_SERVER_SECRET__KEY__HEADER__VALUE", "SECRET")
+	c, err := GetConfig("")
+	require.NoError(t, err)
+	require.Equal(t, "X-XXXX", c.Server.SecretKeyHeaderName)
+	require.Equal(t, "SECRET", c.Server.SecretKeyHeaderValue)
 }

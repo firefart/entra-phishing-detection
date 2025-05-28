@@ -15,6 +15,7 @@ LICENSE
 *.yml
 *.yaml
 *.sample
+*.log
 Dockerfile
 Dockerfile.*
 .idea/

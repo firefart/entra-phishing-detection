@@ -39,30 +39,37 @@ Use `--help` to show all available flags and default values
 
 | Value          | Description                                                                                             |
 | -------------- | ------------------------------------------------------------------------------------------------------- |
-| -listen        | the ip and port to listen to                                                                            |
-| -listenMetrics | the ip and port to listen to for metrics (this endpoint should not be exposed directly to the internet) |
-| -config        | the config filename                                                                                     |
+| -config        | the config filename (you can also use env variables instead)                                            |
 | -debug         | enable debug output                                                                                     |
-| -json          | print all logs in json format so it can be parsed easily                                                |
 | -configcheck   | checks the configfile and exits with an error code                                                      |
 | -version       | shows version information and exits                                                                     |
 
-## config.json
+## config.json // env variables
 
-| Value                          | Description                                                                                                                                                                                 |
-| ------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| server.graceful_timeout        | graceful timeout when stopping the server                                                                                                                                                   |
-| server.secret_key_header_name  | used for the middleware to secure the version endpoint. Header name that must be included                                                                                                   |
-| server.secret_key_header_value | The corresponding header value to secret_key_header_name                                                                                                                                    |
-| server.ip_header               | If you are running behind a reverse proxy, set this header to the custom IP-header and make sure it's only from trusted proxies (via your Caddyfile)                                        |
-| server.host_headers            | Array of headers to check for the host value, in order of preference (e.g. ["X-Forwarded-Host", "X-Original-Host"]). Leave empty when not exposed via a correctly configured reverse proxy. |
-| server.path_image              | Path to the image url. Should be a random url like a GUID otherwise scanners will trigger your app easily. Please exclude the leading slash                                                 |
-| server.path_health             | Path to the health check url (need to match the .env file)                                                                                                                                  |
-| server.path_version            | Path to the version endpoint                                                                                                                                                                |
-| timeout                        | general request timeout                                                                                                                                                                     |
-| allowed_origins                | array of hostnames that are valid. Defaults to login.microsoftonline.com                                                                                                                    |
+| Value                          | ENV Variable                            | Description                                                                                                                                                                                 |
+| ------------------------------ | --------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| server.listen                  | ENTRA_SERVER_LISTEN                     | the ip and port to listen to                                                                                                                                                                |
+| server.listen_metrics          | ENTRA_SERVER_LISTEN__METRICS            | the ip and port to listen to for metrics (this endpoint should not be exposed directly to the internet)                                                                                     |
+| server.graceful_timeout        | ENTRA_SERVER_GRACEFUL__TIMEOUT          | graceful timeout when stopping the server                                                                                                                                                   |
+| server.secret_key_header_name  | ENTRA_SERVER_SECRET__KEY__HEADER__NAME  | used for the middleware to secure the version endpoint. Header name that must be included                                                                                                   |
+| server.secret_key_header_value | ENTRA_SERVER_SECRET__KEY__HEADER__VALUE | The corresponding header value to secret_key_header_name                                                                                                                                    |
+| server.ip_header               | ENTRA_SERVER_IP__HEADER                 | If you are running behind a reverse proxy, set this header to the custom IP-header and make sure it's only from trusted proxies (via your Caddyfile)                                        |
+| server.host_headers            | ENTRA_SERVER_HOST__HEADERS              | Array of headers to check for the host value, in order of preference (e.g. ["X-Forwarded-Host", "X-Original-Host"]). Leave empty when not exposed via a correctly configured reverse proxy. |
+| server.path_image              | ENTRA_SERVER_PATH__IMAGE                | Path to the image url. Should be a random url like a GUID otherwise scanners will trigger your app easily. Please exclude the leading slash                                                 |
+| server.path_health             | ENTRA_SERVER_PATH__HEALTH               | Path to the health check url (need to match the .env file)                                                                                                                                  |
+| server.path_version            | ENTRA_SERVER_PATH__VERSION              | Path to the version endpoint                                                                                                                                                                |
+| logging.access_log             | ENTRA_LOGGING_ACCESS__LOG               | Enable internal access log if no reverse proxy is used                                                                                                                                      |
+| logging.json                   | ENTRA_LOGGING_JSON                      | log output in json for easy parsing                                                                                                                                                         |
+| logging.log_file               | ENTRA_LOGGING_LOG__FILE                 | log file name to use in addition to stdout, useful in k8s setup with logging sidecar                                                                                                        |
+| logging.rotate.enabled         | ENTRA_LOGGING_ROTATE_ENABLED            | enable autoamtic log rotate of the log file, only used if log_file is specified                                                                                                             |
+| logging.rotate.max_size        | ENTRA_LOGGING_ROTATE_MAX__SIZE          | Max size in MB before rotation                                                                                                                                                              |
+| logging.rotate.max_backups     | ENTRA_LOGGING_ROTATE_MAX__BACKUPS       | Number of backups to keep                                                                                                                                                                   |
+| logging.rotate.max_age         | ENTRA_LOGGING_ROTATE_MAX__AGE           | Days to retain old log files                                                                                                                                                                |
+| logging.rotate.compress        | ENTRA_LOGGING_ROTATE_COMPRESS           | Enable compression of rotated files                                                                                                                                                         |
+| timeout                        | ENTRA_TIMEOUT                           | general request timeout                                                                                                                                                                     |
+| allowed_origins                | ENTRA_ALLOWED__ORIGINS                  | array of hostnames that are valid. Defaults to login.microsoftonline.com                                                                                                                    |
 
-## .env
+## .env for docker-compose use
 
 ```text
 WEB_LISTEN=127.0.0.1:8000

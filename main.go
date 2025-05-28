@@ -5,6 +5,7 @@ import (
 	"errors"
 	"flag"
 	"fmt"
+	"io"
 	"log/slog"
 	nethttp "net/http"
 	"os"
@@ -20,14 +21,11 @@ import (
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"go.uber.org/automaxprocs/maxprocs"
+	"gopkg.in/natefinch/lumberjack.v2"
 )
 
 type cliOptions struct {
-	debugMode      bool
-	configFilename string
-	accessLog      bool
-	listen         string
-	listenMetrics  string
+	debugMode bool
 }
 
 func main() {
@@ -37,16 +35,10 @@ func main() {
 
 	var version bool
 	var configCheckMode bool
-	var jsonOutput bool
-	var logFileName string
+	var configFilename string
 	cli := cliOptions{}
 	flag.BoolVar(&cli.debugMode, "debug", false, "Enable DEBUG mode")
-	flag.StringVar(&cli.listen, "listen", "127.0.0.1:8000", "listen address")
-	flag.StringVar(&cli.listenMetrics, "listen-metrics", "127.0.0.1:8001", "listen address")
-	flag.StringVar(&cli.configFilename, "config", "", "config file to use")
-	flag.BoolVar(&cli.accessLog, "access-log", false, "turn on access logging if no reverse proxy is used")
-	flag.BoolVar(&jsonOutput, "json", false, "output in json instead")
-	flag.StringVar(&logFileName, "logfile", "", "also log to log file (and to stdout)")
+	flag.StringVar(&configFilename, "config", "", "config file to use")
 	flag.BoolVar(&configCheckMode, "configcheck", false, "just check the config")
 	flag.BoolVar(&version, "version", false, "show version")
 	flag.Parse()
@@ -61,60 +53,73 @@ func main() {
 		os.Exit(0)
 	}
 
+	configuration, err := config.GetConfig(configFilename)
+	if err != nil {
+		// check if we have a multierror from multiple validation errors
+		var merr *multierror.Error
+		if errors.As(err, &merr) {
+			for _, e := range merr.Errors {
+				fmt.Println("Error in config:", e.Error()) // nolint: forbidigo
+			}
+			os.Exit(1)
+		}
+		// a normal error
+		fmt.Println("Error in config:", err.Error()) // nolint: forbidigo
+		os.Exit(1)
+	}
+
+	// if we are in config check mode, we just validate the config and exit
+	// if the config has errors, the statements above will already exit with an error
+	if configCheckMode {
+		return
+	}
+
 	var logger *slog.Logger
-	var err error
-	if logFileName != "" {
-		logFile, err := os.OpenFile(logFileName, os.O_RDWR|os.O_CREATE|os.O_APPEND, 0o666)
+	if configuration.Logging.LogFile != "" {
+		logFile, err := os.OpenFile(configuration.Logging.LogFile, os.O_RDWR|os.O_CREATE|os.O_APPEND, 0o666)
 		if err != nil {
 			fmt.Printf("Error opening log file: %v\n", err) // nolint: forbidigo
 			os.Exit(1)
 		}
 		defer logFile.Close()
 
-		logger = newLogger(cli.debugMode, jsonOutput, logFile)
+		var writer io.Writer
+		if configuration.Logging.Rotate.Enabled {
+			logRotator := &lumberjack.Logger{
+				Filename: configuration.Logging.LogFile,
+			}
+			if configuration.Logging.Rotate.MaxSize > 0 {
+				logRotator.MaxSize = configuration.Logging.Rotate.MaxSize
+			}
+			if configuration.Logging.Rotate.MaxBackups > 0 {
+				logRotator.MaxBackups = configuration.Logging.Rotate.MaxBackups
+			}
+			if configuration.Logging.Rotate.MaxAge > 0 {
+				logRotator.MaxAge = configuration.Logging.Rotate.MaxAge
+			}
+			if configuration.Logging.Rotate.Compress {
+				logRotator.Compress = configuration.Logging.Rotate.Compress
+			}
+			writer = logRotator
+		} else {
+			writer = logFile
+		}
+		logger = newLogger(cli.debugMode, configuration.Logging.JSON, writer)
 	} else {
-		logger = newLogger(cli.debugMode, jsonOutput, nil)
+		logger = newLogger(cli.debugMode, configuration.Logging.JSON, nil)
 	}
 
 	ctx := context.Background()
-	if configCheckMode {
-		err = configCheck(cli.configFilename)
-	} else {
-		err = run(ctx, logger, cli)
-	}
-
+	err = run(ctx, logger, configuration, cli)
 	if err != nil {
-		// check if we have a multierror
-		var merr *multierror.Error
-		if errors.As(err, &merr) {
-			for _, e := range merr.Errors {
-				logger.Error(e.Error())
-			}
-			os.Exit(1) // nolint: gocritic
-		}
-		// a normal error
 		logger.Error(err.Error())
 		os.Exit(1) // nolint: gocritic
 	}
 }
 
-func configCheck(configFilename string) error {
-	_, err := config.GetConfig(configFilename)
-	return err
-}
-
-func run(ctx context.Context, logger *slog.Logger, cliOptions cliOptions) error {
+func run(ctx context.Context, logger *slog.Logger, configuration config.Configuration, cliOptions cliOptions) error {
 	ctx, cancel := signal.NotifyContext(ctx, os.Interrupt, syscall.SIGTERM, syscall.SIGINT)
 	defer cancel()
-
-	if cliOptions.configFilename == "" {
-		return errors.New("please provide a config file")
-	}
-
-	configuration, err := config.GetConfig(cliOptions.configFilename)
-	if err != nil {
-		return err
-	}
 
 	reg := prometheus.NewRegistry()
 	m, err := metrics.NewMetrics(reg)
@@ -129,14 +134,14 @@ func run(ctx context.Context, logger *slog.Logger, cliOptions cliOptions) error 
 		server.WithMetrics(m),
 	}
 
-	if cliOptions.accessLog {
+	if configuration.Logging.AccessLog {
 		options = append(options, server.WithAccessLog())
 	}
 
 	s := server.NewServer(options...)
 
 	srv := &nethttp.Server{
-		Addr:         cliOptions.listen,
+		Addr:         configuration.Server.Listen,
 		Handler:      s,
 		ReadTimeout:  configuration.Timeout,
 		WriteTimeout: configuration.Timeout,
@@ -144,7 +149,7 @@ func run(ctx context.Context, logger *slog.Logger, cliOptions cliOptions) error 
 
 	go func() {
 		logger.Info("Starting server",
-			slog.String("host", cliOptions.listen),
+			slog.String("host", configuration.Server.Listen),
 			slog.Duration("gracefultimeout", configuration.Server.GracefulTimeout),
 			slog.Duration("timeout", configuration.Timeout),
 			slog.Bool("debug", cliOptions.debugMode),
@@ -160,7 +165,7 @@ func run(ctx context.Context, logger *slog.Logger, cliOptions cliOptions) error 
 	muxMetrics := nethttp.NewServeMux()
 	muxMetrics.Handle("/metrics", promhttp.HandlerFor(reg, promhttp.HandlerOpts{Registry: reg}))
 	srvMetrics := &nethttp.Server{
-		Addr:         cliOptions.listenMetrics,
+		Addr:         configuration.Server.ListenMetrics,
 		Handler:      muxMetrics,
 		ReadTimeout:  configuration.Timeout,
 		WriteTimeout: configuration.Timeout,
@@ -168,7 +173,7 @@ func run(ctx context.Context, logger *slog.Logger, cliOptions cliOptions) error 
 
 	go func() {
 		logger.Info("Starting metrics server",
-			slog.String("host", cliOptions.listenMetrics),
+			slog.String("host", configuration.Server.ListenMetrics),
 		)
 		if err := srvMetrics.ListenAndServe(); err != nil && !errors.Is(err, nethttp.ErrServerClosed) {
 			logger.Error("error on metrics listenandserve", slog.String("err", err.Error()))

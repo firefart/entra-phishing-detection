@@ -37,3 +37,4 @@ package.json
 package-lock.json
 
 dist/
+*.log

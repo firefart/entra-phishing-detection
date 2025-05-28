@@ -8,6 +8,7 @@ import (
 
 	"github.com/hashicorp/go-multierror"
 	"github.com/knadh/koanf/parsers/json"
+	"github.com/knadh/koanf/providers/env"
 	"github.com/knadh/koanf/providers/file"
 	"github.com/knadh/koanf/providers/structs"
 	"github.com/knadh/koanf/v2"
@@ -17,11 +18,14 @@ import (
 
 type Configuration struct {
 	Server         Server        `koanf:"server"`
+	Logging        Logging       `koanf:"logging"`
 	Timeout        time.Duration `koanf:"timeout" validate:"required"`
 	AllowedOrigins []string      `koanf:"allowed_origins" validate:"required,dive,fqdn"`
 }
 
 type Server struct {
+	Listen               string        `koanf:"listen" validate:"required,hostname_port"`
+	ListenMetrics        string        `koanf:"listen_metrics" validate:"required,hostname_port"`
 	GracefulTimeout      time.Duration `koanf:"graceful_timeout" validate:"required"`
 	SecretKeyHeaderName  string        `koanf:"secret_key_header_name" validate:"required"`
 	SecretKeyHeaderValue string        `koanf:"secret_key_header_value" validate:"required"`
@@ -32,8 +36,23 @@ type Server struct {
 	PathVersion          string        `koanf:"path_version"`
 }
 
+type Logging struct {
+	AccessLog bool   `koanf:"access_log"`
+	JSON      bool   `koanf:"json"`
+	LogFile   string `koanf:"log_file" validate:"omitempty,filepath"`
+	Rotate    struct {
+		Enabled    bool `koanf:"enabled"`
+		MaxSize    int  `koanf:"max_size" validate:"omitempty,gte=1"`
+		MaxBackups int  `koanf:"max_backups" validate:"omitempty,gte=1"`
+		MaxAge     int  `koanf:"max_age" validate:"omitempty,gte=1"`
+		Compress   bool `koanf:"compress"`
+	} `koanf:"rotate"`
+}
+
 var defaultConfig = Configuration{
 	Server: Server{
+		Listen:              "127.0.0.1:8000",
+		ListenMetrics:       "127.0.0.1:8001",
 		GracefulTimeout:     10 * time.Second,
 		SecretKeyHeaderName: "X-Secret-Key-Header",
 	},
@@ -41,6 +60,8 @@ var defaultConfig = Configuration{
 	Timeout:        5 * time.Second,
 }
 
+// GetConfig loads the configuration from the specified file and environment variables.
+// if the filename is empty, only the default configuration and environment variables are used.
 func GetConfig(f string) (Configuration, error) {
 	validate := validator.New(validator.WithRequiredStructEnabled())
 
@@ -52,7 +73,24 @@ func GetConfig(f string) (Configuration, error) {
 		return Configuration{}, err
 	}
 
-	if err := k.Load(file.Provider(f), json.Parser()); err != nil {
+	// only load the json provider if a file is specified
+	if f != "" {
+		if err := k.Load(file.Provider(f), json.Parser()); err != nil {
+			return Configuration{}, err
+		}
+	}
+
+	if err := k.Load(env.Provider("ENTRA_", ".", func(s string) string {
+		// hack so we can use double underscores in environment variables
+		// we first replace all underscores with dots, and two dots represent
+		// a former double underscore, so make this a normal underscore again
+		// this allows for camel case environment variables
+		s = strings.TrimPrefix(s, "ENTRA_")
+		s = strings.ToLower(s)
+		s = strings.ReplaceAll(s, "_", ".")
+		s = strings.ReplaceAll(s, "..", "_")
+		return s
+	}), nil); err != nil {
 		return Configuration{}, err
 	}
 

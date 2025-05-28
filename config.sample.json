@@ -1,5 +1,7 @@
 {
   "server": {
+    "listen": ":8000",
+    "listen_metrics": ":8001",
     "graceful_timeout": "5s",
     "secret_key_header_name": "X-Secret-Key-Header",
     "secret_key_header_value": "SECRET",
@@ -12,6 +14,17 @@
     "path_image": "30ce6ec8-1ca0-4dee-a4b0-b56fd4adf731",
     "path_health": "10282d45-484d-4e18-8d55-40d38e82c39b/health",
     "path_version": "d7cf1d1d-d4ba-49a0-8ff7-565c685c047a/version"
+  },
+  "logging": {
+    "access_log": false,
+    "json": false,
+    "log_file": "log.log",
+    "rotate": {
+      "max_size": 100,
+      "max_age": 30,
+      "max_backups": 3,
+      "compress": true
+    }
   },
   "timeout": "5s",
   "allowed_origins": [
