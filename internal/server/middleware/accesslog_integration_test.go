@@ -37,7 +37,7 @@ func TestAccessLogMiddlewareIntegration(t *testing.T) {
 
 	// Create metrics
 	registry := prometheus.NewRegistry()
-	m, err := metrics.NewMetrics(registry)
+	m, err := metrics.NewMetrics(registry, metrics.WithAccessLog())
 	require.NoError(t, err)
 
 	// Create server with accesslog middleware

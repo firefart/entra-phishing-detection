@@ -10,6 +10,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/firefart/entra-phishing-detection/internal/metrics"
+	"github.com/prometheus/client_golang/prometheus"
 	"github.com/stretchr/testify/require"
 )
 
@@ -17,8 +19,10 @@ func TestAccessLog(t *testing.T) {
 	t.Run("logs successful request", func(t *testing.T) {
 		var logOutput bytes.Buffer
 		logger := slog.New(slog.NewJSONHandler(&logOutput, nil))
+		m, err := metrics.NewMetrics(prometheus.NewRegistry(), metrics.WithAccessLog())
+		require.NoError(t, err)
 
-		middleware := AccessLog(AccessLogConfig{Logger: logger})
+		middleware := AccessLog(AccessLogConfig{Logger: logger, Metrics: m})
 
 		nextHandler := http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 			w.WriteHeader(http.StatusOK)
@@ -42,7 +46,7 @@ func TestAccessLog(t *testing.T) {
 		require.NotEmpty(t, logOutput.String())
 
 		var logEntry map[string]interface{}
-		err := json.Unmarshal(logOutput.Bytes(), &logEntry)
+		err = json.Unmarshal(logOutput.Bytes(), &logEntry)
 		require.NoError(t, err)
 
 		require.Equal(t, "INFO", logEntry["level"])
@@ -65,8 +69,10 @@ func TestAccessLog(t *testing.T) {
 	t.Run("logs error status code", func(t *testing.T) {
 		var logOutput bytes.Buffer
 		logger := slog.New(slog.NewJSONHandler(&logOutput, nil))
+		m, err := metrics.NewMetrics(prometheus.NewRegistry(), metrics.WithAccessLog())
+		require.NoError(t, err)
 
-		middleware := AccessLog(AccessLogConfig{Logger: logger})
+		middleware := AccessLog(AccessLogConfig{Logger: logger, Metrics: m})
 
 		nextHandler := http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 			w.WriteHeader(http.StatusNotFound)
@@ -82,7 +88,7 @@ func TestAccessLog(t *testing.T) {
 		require.Equal(t, http.StatusNotFound, w.Code)
 
 		var logEntry map[string]interface{}
-		err := json.Unmarshal(logOutput.Bytes(), &logEntry)
+		err = json.Unmarshal(logOutput.Bytes(), &logEntry)
 		require.NoError(t, err)
 
 		require.Equal(t, "POST", logEntry["method"])
@@ -93,8 +99,10 @@ func TestAccessLog(t *testing.T) {
 	t.Run("captures IP from context", func(t *testing.T) {
 		var logOutput bytes.Buffer
 		logger := slog.New(slog.NewJSONHandler(&logOutput, nil))
+		m, err := metrics.NewMetrics(prometheus.NewRegistry(), metrics.WithAccessLog())
+		require.NoError(t, err)
 
-		middleware := AccessLog(AccessLogConfig{Logger: logger})
+		middleware := AccessLog(AccessLogConfig{Logger: logger, Metrics: m})
 
 		nextHandler := http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 			w.WriteHeader(http.StatusOK)
@@ -111,7 +119,7 @@ func TestAccessLog(t *testing.T) {
 		handler.ServeHTTP(w, req)
 
 		var logEntry map[string]interface{}
-		err := json.Unmarshal(logOutput.Bytes(), &logEntry)
+		err = json.Unmarshal(logOutput.Bytes(), &logEntry)
 		require.NoError(t, err)
 
 		require.Equal(t, "192.168.1.100", logEntry["remote_ip"])
@@ -120,8 +128,10 @@ func TestAccessLog(t *testing.T) {
 	t.Run("handles multiple header values", func(t *testing.T) {
 		var logOutput bytes.Buffer
 		logger := slog.New(slog.NewJSONHandler(&logOutput, nil))
+		m, err := metrics.NewMetrics(prometheus.NewRegistry(), metrics.WithAccessLog())
+		require.NoError(t, err)
 
-		middleware := AccessLog(AccessLogConfig{Logger: logger})
+		middleware := AccessLog(AccessLogConfig{Logger: logger, Metrics: m})
 
 		nextHandler := http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 			w.WriteHeader(http.StatusOK)
@@ -137,7 +147,7 @@ func TestAccessLog(t *testing.T) {
 		handler.ServeHTTP(w, req)
 
 		var logEntry map[string]interface{}
-		err := json.Unmarshal(logOutput.Bytes(), &logEntry)
+		err = json.Unmarshal(logOutput.Bytes(), &logEntry)
 		require.NoError(t, err)
 
 		headers := logEntry["request_headers"].(map[string]interface{})
@@ -147,8 +157,10 @@ func TestAccessLog(t *testing.T) {
 	t.Run("measures duration correctly", func(t *testing.T) {
 		var logOutput bytes.Buffer
 		logger := slog.New(slog.NewJSONHandler(&logOutput, nil))
+		m, err := metrics.NewMetrics(prometheus.NewRegistry(), metrics.WithAccessLog())
+		require.NoError(t, err)
 
-		middleware := AccessLog(AccessLogConfig{Logger: logger})
+		middleware := AccessLog(AccessLogConfig{Logger: logger, Metrics: m})
 
 		nextHandler := http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 			time.Sleep(10 * time.Millisecond) // Small delay for testing
@@ -165,7 +177,7 @@ func TestAccessLog(t *testing.T) {
 		actualDuration := time.Since(start)
 
 		var logEntry map[string]interface{}
-		err := json.Unmarshal(logOutput.Bytes(), &logEntry)
+		err = json.Unmarshal(logOutput.Bytes(), &logEntry)
 		require.NoError(t, err)
 
 		loggedDuration := logEntry["duration"].(float64)
@@ -175,15 +187,27 @@ func TestAccessLog(t *testing.T) {
 
 	t.Run("panics without logger", func(t *testing.T) {
 		require.Panics(t, func() {
-			AccessLog(AccessLogConfig{})
+			AccessLog(AccessLogConfig{
+				Metrics: &metrics.Metrics{},
+			})
+		})
+	})
+
+	t.Run("panics without metrics", func(t *testing.T) {
+		require.Panics(t, func() {
+			AccessLog(AccessLogConfig{
+				Logger: slog.New(slog.DiscardHandler),
+			})
 		})
 	})
 
 	t.Run("handles default status code", func(t *testing.T) {
 		var logOutput bytes.Buffer
 		logger := slog.New(slog.NewJSONHandler(&logOutput, nil))
+		m, err := metrics.NewMetrics(prometheus.NewRegistry(), metrics.WithAccessLog())
+		require.NoError(t, err)
 
-		middleware := AccessLog(AccessLogConfig{Logger: logger})
+		middleware := AccessLog(AccessLogConfig{Logger: logger, Metrics: m})
 
 		nextHandler := http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 			// Don't explicitly set status code, should default to 200
@@ -199,7 +223,7 @@ func TestAccessLog(t *testing.T) {
 		require.Equal(t, http.StatusOK, w.Code)
 
 		var logEntry map[string]interface{}
-		err := json.Unmarshal(logOutput.Bytes(), &logEntry)
+		err = json.Unmarshal(logOutput.Bytes(), &logEntry)
 		require.NoError(t, err)
 
 		require.Equal(t, float64(200), logEntry["status_code"]) // nolint:testifylint

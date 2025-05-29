@@ -8,11 +8,12 @@ import (
 )
 
 type Metrics struct {
-	ImageHits *prometheus.CounterVec
+	ImageHits       *prometheus.CounterVec
+	RequestCount    *prometheus.CounterVec
+	RequestDuration *prometheus.HistogramVec
 }
 
-func NewMetrics(reg prometheus.Registerer) (*Metrics, error) {
-	labels := []string{"host", "status"}
+func NewMetrics(reg prometheus.Registerer, opts ...OptionsMetricsFunc) (*Metrics, error) {
 	nameSpace := "entra_phishing_detection"
 	m := &Metrics{
 		ImageHits: prometheus.NewCounterVec(
@@ -21,7 +22,7 @@ func NewMetrics(reg prometheus.Registerer) (*Metrics, error) {
 				Name:      "image_hits_total",
 				Help:      "How many requests were made to the image handler. Includes the request host and the status of the response.",
 			},
-			labels,
+			[]string{"host", "status"},
 		),
 	}
 	// also add the default collectors
@@ -32,7 +33,13 @@ func NewMetrics(reg prometheus.Registerer) (*Metrics, error) {
 		return nil, fmt.Errorf("failed to register process collector: %w", err)
 	}
 	if err := reg.Register(m.ImageHits); err != nil {
-		return nil, fmt.Errorf("failed to register request count metric: %w", err)
+		return nil, fmt.Errorf("failed to register image hits metric: %w", err)
+	}
+
+	for _, o := range opts {
+		if err := o(m, reg); err != nil {
+			return nil, err
+		}
 	}
 
 	return m, nil

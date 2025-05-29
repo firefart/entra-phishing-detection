@@ -3,8 +3,11 @@ package middleware
 import (
 	"log/slog"
 	"net/http"
+	"strconv"
 	"strings"
 	"time"
+
+	"github.com/firefart/entra-phishing-detection/internal/metrics"
 )
 
 // responseWriter wraps http.ResponseWriter to capture status code
@@ -35,13 +38,17 @@ func (rw *responseWriter) Write(data []byte) (int, error) {
 
 // AccessLogConfig holds configuration for the accesslog middleware
 type AccessLogConfig struct {
-	Logger *slog.Logger
+	Logger  *slog.Logger
+	Metrics *metrics.Metrics
 }
 
 // AccessLog creates a middleware that logs all HTTP requests with detailed information
 func AccessLog(config AccessLogConfig) func(next http.Handler) http.Handler {
 	if config.Logger == nil {
 		panic("accesslog middleware requires a logger")
+	}
+	if config.Metrics == nil {
+		panic("accesslog middleware requires metrics")
 	}
 
 	return func(next http.Handler) http.Handler {
@@ -71,6 +78,16 @@ func AccessLog(config AccessLogConfig) func(next http.Handler) http.Handler {
 			for name, values := range r.Header {
 				headerAttrs = append(headerAttrs, slog.String(strings.ToLower(name), strings.Join(values, ", ")))
 			}
+
+			// Labels: "code", "method", "host", "url"
+			labelValues := []string{
+				strconv.Itoa(wrapped.statusCode),
+				r.Method,
+				r.Host,
+				r.URL.Path,
+			}
+			config.Metrics.RequestCount.WithLabelValues(labelValues...).Inc()
+			config.Metrics.RequestDuration.WithLabelValues(labelValues...).Observe(duration.Seconds())
 
 			// Log the request with all details
 			config.Logger.With(

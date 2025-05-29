@@ -122,7 +122,12 @@ func run(ctx context.Context, logger *slog.Logger, configuration config.Configur
 	defer cancel()
 
 	reg := prometheus.NewRegistry()
-	m, err := metrics.NewMetrics(reg)
+	var metricOpts []metrics.OptionsMetricsFunc
+	if configuration.Logging.AccessLog {
+		metricOpts = append(metricOpts, metrics.WithAccessLog())
+	}
+
+	m, err := metrics.NewMetrics(reg, metricOpts...)
 	if err != nil {
 		return fmt.Errorf("failed to create metrics: %w", err)
 	}

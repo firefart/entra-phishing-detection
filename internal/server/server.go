@@ -65,7 +65,10 @@ func NewServer(opts ...OptionsServerFunc) http.Handler {
 		Headers: s.config.Server.HostHeaders,
 	}))
 	if s.accessLog {
-		r.Use(middleware.AccessLog(middleware.AccessLogConfig{Logger: s.logger}))
+		r.Use(middleware.AccessLog(middleware.AccessLogConfig{
+			Logger:  s.logger,
+			Metrics: s.metrics,
+		}))
 	}
 
 	imageRoute := "/image"

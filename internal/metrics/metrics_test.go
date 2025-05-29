@@ -158,3 +158,124 @@ func TestMetricsDefaultCollectors(t *testing.T) {
 	require.True(t, foundGoCollector, "Go collector metrics should be present")
 	require.True(t, foundProcessCollector, "Process collector metrics should be present")
 }
+
+func TestNewMetricsWithOptions(t *testing.T) {
+	t.Run("WithAccessLog option", func(t *testing.T) {
+		reg := prometheus.NewRegistry()
+		m, err := NewMetrics(reg, WithAccessLog())
+		require.NoError(t, err)
+		require.NotNil(t, m)
+
+		// Verify that additional metrics are created with WithAccessLog option
+		require.NotNil(t, m.RequestCount, "RequestCount should be initialized with WithAccessLog option")
+		require.NotNil(t, m.RequestDuration, "RequestDuration should be initialized with WithAccessLog option")
+
+		// Test that we can use the additional metrics
+		m.RequestCount.WithLabelValues("200", "GET", "example.com", "/test").Inc()
+		m.RequestDuration.WithLabelValues("200", "GET", "example.com", "/test").Observe(0.5)
+
+		// Gather metrics to verify they are registered
+		gathered, err := reg.Gather()
+		require.NoError(t, err)
+		require.NotEmpty(t, gathered)
+
+		foundRequestCount := false
+		foundRequestDuration := false
+
+		for _, metric := range gathered {
+			switch metric.GetName() {
+			case "entra_phishing_detection_http_requests_total":
+				foundRequestCount = true
+				require.Len(t, metric.GetMetric(), 1)
+				require.Equal(t, float64(1), metric.GetMetric()[0].GetCounter().GetValue()) // nolint:testifylint
+
+				// Verify labels
+				labels := metric.GetMetric()[0].GetLabel()
+				require.Len(t, labels, 4)
+				expectedLabels := map[string]string{
+					"code":   "200",
+					"method": "GET",
+					"host":   "example.com",
+					"path":   "/test",
+				}
+				for _, label := range labels {
+					expectedValue, exists := expectedLabels[label.GetName()]
+					require.True(t, exists, "Unexpected label: %s", label.GetName())
+					require.Equal(t, expectedValue, label.GetValue())
+				}
+
+			case "entra_phishing_detection_http_request_duration_seconds":
+				foundRequestDuration = true
+				require.Len(t, metric.GetMetric(), 1)
+				histogram := metric.GetMetric()[0].GetHistogram()
+				require.NotNil(t, histogram)
+				require.Equal(t, uint64(1), histogram.GetSampleCount())
+				require.Equal(t, 0.5, histogram.GetSampleSum()) // nolint:testifylint
+
+				// Verify labels
+				labels := metric.GetMetric()[0].GetLabel()
+				require.Len(t, labels, 4)
+				expectedLabels := map[string]string{
+					"code":   "200",
+					"method": "GET",
+					"host":   "example.com",
+					"path":   "/test",
+				}
+				for _, label := range labels {
+					expectedValue, exists := expectedLabels[label.GetName()]
+					require.True(t, exists, "Unexpected label: %s", label.GetName())
+					require.Equal(t, expectedValue, label.GetValue())
+				}
+			}
+		}
+
+		require.True(t, foundRequestCount, "Expected http_requests_total to be found in gathered metrics")
+		require.True(t, foundRequestDuration, "Expected http_request_duration_seconds to be found in gathered metrics")
+	})
+
+	t.Run("Without options", func(t *testing.T) {
+		reg := prometheus.NewRegistry()
+		m, err := NewMetrics(reg)
+		require.NoError(t, err)
+		require.NotNil(t, m)
+
+		// Verify that optional metrics are NOT created without options
+		require.Nil(t, m.RequestCount, "RequestCount should be nil without WithAccessLog option")
+		require.Nil(t, m.RequestDuration, "RequestDuration should be nil without WithAccessLog option")
+
+		// Gather metrics to verify only basic metrics are present
+		gathered, err := reg.Gather()
+		require.NoError(t, err)
+		require.NotEmpty(t, gathered)
+
+		foundRequestCount := false
+		foundRequestDuration := false
+
+		for _, metric := range gathered {
+			if metric.GetName() == "entra_phishing_detection_http_requests_total" {
+				foundRequestCount = true
+			}
+			if metric.GetName() == "entra_phishing_detection_http_request_duration_seconds" {
+				foundRequestDuration = true
+			}
+		}
+
+		require.False(t, foundRequestCount, "http_requests_total should not be present without WithAccessLog option")
+		require.False(t, foundRequestDuration, "http_request_duration_seconds should not be present without WithAccessLog option")
+	})
+
+	t.Run("Option registration error", func(t *testing.T) {
+		reg := prometheus.NewRegistry()
+
+		// First registration should succeed
+		m1, err := NewMetrics(reg, WithAccessLog())
+		require.NoError(t, err)
+		require.NotNil(t, m1)
+
+		// Second registration should fail due to duplicate metric registration in the option
+		m2, err := NewMetrics(reg, WithAccessLog())
+		require.Error(t, err)
+		require.Nil(t, m2)
+		require.Contains(t, err.Error(), "failed to register")
+	})
+}
