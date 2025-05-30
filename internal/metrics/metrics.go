@@ -22,7 +22,7 @@ func NewMetrics(reg prometheus.Registerer, opts ...OptionsMetricsFunc) (*Metrics
 				Name:      "image_hits_total",
 				Help:      "How many requests were made to the image handler. Includes the request host and the status of the response.",
 			},
-			[]string{"host", "status"},
+			[]string{"host", "language", "status"},
 		),
 	}
 	// also add the default collectors

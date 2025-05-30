@@ -6,6 +6,7 @@ import (
 	"flag"
 	"fmt"
 	"io"
+	"log"
 	"log/slog"
 	nethttp "net/http"
 	"os"
@@ -30,7 +31,7 @@ type cliOptions struct {
 
 func main() {
 	if _, err := maxprocs.Set(); err != nil {
-		panic(fmt.Sprintf("Error on gomaxprocs: %v\n", err))
+		log.Fatalf("Error on gomaxprocs: %v\n", err)
 	}
 
 	var version bool
@@ -46,10 +47,9 @@ func main() {
 	if version {
 		buildInfo, ok := debug.ReadBuildInfo()
 		if !ok {
-			fmt.Println("Unable to determine version information") // nolint: forbidigo
-			os.Exit(1)
+			log.Fatalln("Unable to determine version information")
 		}
-		fmt.Printf("%s", buildInfo) // nolint: forbidigo
+		log.Printf("Version Information:\n%s", buildInfo)
 		os.Exit(0)
 	}
 
@@ -59,13 +59,12 @@ func main() {
 		var merr *multierror.Error
 		if errors.As(err, &merr) {
 			for _, e := range merr.Errors {
-				fmt.Println("Error in config:", e.Error()) // nolint: forbidigo
+				log.Println("Error in config:", e.Error())
 			}
 			os.Exit(1)
 		}
 		// a normal error
-		fmt.Println("Error in config:", err.Error()) // nolint: forbidigo
-		os.Exit(1)
+		log.Fatalln("Error in config:", err.Error())
 	}
 
 	// if we are in config check mode, we just validate the config and exit
@@ -78,8 +77,7 @@ func main() {
 	if configuration.Logging.LogFile != "" {
 		logFile, err := os.OpenFile(configuration.Logging.LogFile, os.O_RDWR|os.O_CREATE|os.O_APPEND, 0o666)
 		if err != nil {
-			fmt.Printf("Error opening log file: %v\n", err) // nolint: forbidigo
-			os.Exit(1)
+			log.Fatalf("Error opening log file: %v\n", err)
 		}
 		defer logFile.Close()
 

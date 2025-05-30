@@ -10,6 +10,7 @@ import (
 
 	"github.com/firefart/entra-phishing-detection/internal/metrics"
 	"github.com/firefart/entra-phishing-detection/internal/server/middleware"
+	"github.com/firefart/entra-phishing-detection/internal/utils"
 )
 
 // ImageHandler handles requests for the phishing detection image endpoint.
@@ -35,8 +36,10 @@ type ImageHandlerOptions struct {
 	Logger *slog.Logger
 	// ImageOK is the SVG content to return for safe URLs.
 	ImageOK []byte
-	// ImagePhishing is the SVG content to return for phishing attempts.
-	ImagePhishing []byte
+	// ImagePhishingEN is the english SVG content to return for phishing attempts.
+	ImagePhishingEN []byte
+	// ImagePhishingDE is the german SVG content to return for phishing attempts.
+	ImagePhishingDE []byte
 }
 
 func NewImageHandler(opts ImageHandlerOptions) *ImageHandler {
@@ -49,12 +52,35 @@ func NewImageHandler(opts ImageHandlerOptions) *ImageHandler {
 	if len(opts.ImageOK) == 0 {
 		panic("imageOK cannot be nil or empty")
 	}
-	if len(opts.ImagePhishing) == 0 {
-		panic("imagePhishing cannot be nil or empty")
+	if len(opts.ImagePhishingEN) == 0 {
+		panic("imagePhishingEN cannot be nil or empty")
+	}
+	if len(opts.ImagePhishingDE) == 0 {
+		panic("imagePhishingDE cannot be nil or empty")
 	}
 	return &ImageHandler{
 		ImageHandlerOptions: opts,
 	}
+}
+
+func (h *ImageHandler) getLanguageAndImage(r *http.Request) (string, []byte) {
+	// https://developer.mozilla.org/en-US/docs/Web/HTTP/Reference/Headers/Accept-Language
+	languages := utils.GetLanguages(r.Header.Get("Accept-Language"))
+	if len(languages) > 0 {
+		// Check each language in preference order
+		for _, lang := range languages {
+			lang = strings.ToLower(strings.Split(lang, "-")[0]) // Normalize to primary language code
+			// swtich between the defined languages
+			switch lang {
+			case "de":
+				return lang, h.ImagePhishingDE
+			case "en":
+				return lang, h.ImagePhishingEN
+			}
+		}
+	}
+	// Default to English if no specific language is found
+	return "en", h.ImagePhishingEN
 }
 
 func (h *ImageHandler) phishingAttempt(w http.ResponseWriter, r *http.Request, reason string) error {
@@ -69,12 +95,14 @@ func (h *ImageHandler) phishingAttempt(w http.ResponseWriter, r *http.Request, r
 		i++
 	}
 
-	h.Logger.With(slog.String("reason", reason), slog.String("remote_ip", ip), slog.String("host", r.Host)).WithGroup("headers").Warn("phishing attempt detected", header...)
+	language, image := h.getLanguageAndImage(r)
 
-	h.Metrics.ImageHits.WithLabelValues(r.Host, reason).Inc()
+	h.Logger.With(slog.String("reason", reason), slog.String("remote_ip", ip), slog.String("language", language), slog.String("host", r.Host)).WithGroup("headers").Warn("phishing attempt detected", header...)
+
+	h.Metrics.ImageHits.WithLabelValues(r.Host, language, reason).Inc()
 
 	w.WriteHeader(http.StatusOK)
-	_, err := w.Write(h.ImagePhishing)
+	_, err := w.Write(image)
 	if err != nil {
 		return fmt.Errorf("failed to write phishing image response: %w", err)
 	}
@@ -82,7 +110,9 @@ func (h *ImageHandler) phishingAttempt(w http.ResponseWriter, r *http.Request, r
 }
 
 func (h *ImageHandler) safeURL(w http.ResponseWriter, r *http.Request) error {
-	h.Metrics.ImageHits.WithLabelValues(r.Host, reasonAllowedReferer).Inc()
+	language, _ := h.getLanguageAndImage(r)
+
+	h.Metrics.ImageHits.WithLabelValues(r.Host, language, reasonAllowedReferer).Inc()
 
 	w.WriteHeader(http.StatusOK)
 	_, err := w.Write(h.ImageOK)

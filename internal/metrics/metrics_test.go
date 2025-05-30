@@ -22,7 +22,7 @@ func TestNewMetrics(t *testing.T) {
 	require.NotNil(t, m)
 	// we need to increment at least once so it will show up in the metrics
 	testMetric.Add(69)
-	m.ImageHits.WithLabelValues("host.com", "success").Add(69)
+	m.ImageHits.WithLabelValues("host.com", "en", "success").Add(69)
 	gathered, err := reg.Gather()
 	require.NoError(t, err)
 	require.NotEmpty(t, gathered)
@@ -40,11 +40,13 @@ func TestNewMetrics(t *testing.T) {
 			tmp := metric.GetMetric()[0]
 			require.Equal(t, float64(69), tmp.GetCounter().GetValue()) // nolint:testifylint
 			labels := tmp.GetLabel()
-			require.Len(t, labels, 2)
+			require.Len(t, labels, 3)
 			require.Equal(t, "host", labels[0].GetName())
 			require.Equal(t, "host.com", labels[0].GetValue())
-			require.Equal(t, "status", labels[1].GetName())
-			require.Equal(t, "success", labels[1].GetValue())
+			require.Equal(t, "language", labels[1].GetName())
+			require.Equal(t, "en", labels[1].GetValue())
+			require.Equal(t, "status", labels[2].GetName())
+			require.Equal(t, "success", labels[2].GetValue())
 		}
 	}
 	require.True(t, foundCounter, "Expected test_total to be found in gathered metrics")
@@ -76,17 +78,18 @@ func TestMetricsImageHitsLabels(t *testing.T) {
 	// Test different label combinations
 	testCases := []struct {
 		host   string
+		lang   string
 		status string
 		value  float64
 	}{
-		{"example.com", "success", 5.0},
-		{"test.com", "phishing", 3.0},
-		{"another.com", "success", 7.0},
-		{"example.com", "phishing", 2.0}, // Same host, different status
+		{"example.com", "en", "success", 5.0},
+		{"test.com", "en", "phishing", 3.0},
+		{"another.com", "en", "success", 7.0},
+		{"example.com", "en", "phishing", 2.0}, // Same host, different status
 	}
 
 	for _, tc := range testCases {
-		m.ImageHits.WithLabelValues(tc.host, tc.status).Add(tc.value)
+		m.ImageHits.WithLabelValues(tc.host, tc.lang, tc.status).Add(tc.value)
 	}
 
 	// Gather metrics to verify all label combinations are recorded
@@ -108,26 +111,29 @@ func TestMetricsImageHitsLabels(t *testing.T) {
 	metricsByLabels := make(map[string]float64)
 	for _, metric := range imageHitsMetric.GetMetric() {
 		labels := metric.GetLabel()
-		require.Len(t, labels, 2)
+		require.Len(t, labels, 3)
 
-		var host, status string
+		var host, lang, status string
 		for _, label := range labels {
-			if label.GetName() == "host" {
+			switch label.GetName() {
+			case "host":
 				host = label.GetValue()
-			} else if label.GetName() == "status" {
+			case "status":
 				status = label.GetValue()
+			case "language":
+				lang = label.GetValue()
 			}
 		}
 
-		key := host + ":" + status
+		key := host + ":" + lang + ":" + status
 		metricsByLabels[key] = metric.GetCounter().GetValue()
 	}
 
 	// Verify expected values
-	require.Equal(t, 5.0, metricsByLabels["example.com:success"])  // nolint: testifylint
-	require.Equal(t, 3.0, metricsByLabels["test.com:phishing"])    // nolint: testifylint
-	require.Equal(t, 7.0, metricsByLabels["another.com:success"])  // nolint: testifylint
-	require.Equal(t, 2.0, metricsByLabels["example.com:phishing"]) // nolint: testifylint
+	require.Equal(t, 5.0, metricsByLabels["example.com:en:success"])  // nolint: testifylint
+	require.Equal(t, 3.0, metricsByLabels["test.com:en:phishing"])    // nolint: testifylint
+	require.Equal(t, 7.0, metricsByLabels["another.com:en:success"])  // nolint: testifylint
+	require.Equal(t, 2.0, metricsByLabels["example.com:en:phishing"]) // nolint: testifylint
 }
 
 func TestMetricsDefaultCollectors(t *testing.T) {
