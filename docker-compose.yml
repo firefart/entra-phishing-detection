@@ -18,6 +18,8 @@ services:
     configs:
       - source: entra
         target: /app/config.json
+    volumes:
+      - ./images/:/app/images/:ro
     restart: unless-stopped
     networks:
       - net

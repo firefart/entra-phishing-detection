@@ -23,6 +23,7 @@ Dockerfile.*
 tmp/
 certs/
 node_modules/
+images/
 package.json
 package-lock.json
 entra-phishing-detection
