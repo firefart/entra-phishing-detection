@@ -88,6 +88,8 @@ func AccessLog(config AccessLogConfig) func(next http.Handler) http.Handler {
 			}
 			config.Metrics.RequestCount.WithLabelValues(labelValues...).Inc()
 			config.Metrics.RequestDuration.WithLabelValues(labelValues...).Observe(duration.Seconds())
+			config.Metrics.RequestSize.WithLabelValues(labelValues...).Observe(float64(r.ContentLength))
+			config.Metrics.ResponseSize.WithLabelValues(labelValues...).Observe(float64(wrapped.responseLength))
 
 			// Log the request with all details
 			config.Logger.With(

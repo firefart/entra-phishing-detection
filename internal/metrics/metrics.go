@@ -11,6 +11,8 @@ type Metrics struct {
 	ImageHits       *prometheus.CounterVec
 	RequestCount    *prometheus.CounterVec
 	RequestDuration *prometheus.HistogramVec
+	RequestSize     *prometheus.HistogramVec
+	ResponseSize    *prometheus.HistogramVec
 }
 
 func NewMetrics(reg prometheus.Registerer, opts ...OptionsMetricsFunc) (*Metrics, error) {

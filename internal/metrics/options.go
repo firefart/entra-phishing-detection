@@ -28,11 +28,35 @@ func WithAccessLog() OptionsMetricsFunc {
 			},
 			labels,
 		)
+		m.ResponseSize = prometheus.NewHistogramVec(
+			prometheus.HistogramOpts{
+				Namespace: "entra_phishing_detection",
+				Name:      "http_response_size_bytes",
+				Help:      "The HTTP response sizes in bytes.",
+				Buckets:   prometheus.DefBuckets,
+			},
+			labels,
+		)
+		m.RequestSize = prometheus.NewHistogramVec(
+			prometheus.HistogramOpts{
+				Namespace: "entra_phishing_detection",
+				Name:      "http_request_size_bytes",
+				Help:      "The HTTP request sizes in bytes.",
+				Buckets:   prometheus.DefBuckets,
+			},
+			labels,
+		)
 		if err := reg.Register(m.RequestCount); err != nil {
 			return fmt.Errorf("failed to register request count metric: %w", err)
 		}
 		if err := reg.Register(m.RequestDuration); err != nil {
-			return fmt.Errorf("failed to register request request duration metric: %w", err)
+			return fmt.Errorf("failed to register request duration metric: %w", err)
+		}
+		if err := reg.Register(m.ResponseSize); err != nil {
+			return fmt.Errorf("failed to register response size metric: %w", err)
+		}
+		if err := reg.Register(m.RequestSize); err != nil {
+			return fmt.Errorf("failed to register request size metric: %w", err)
 		}
 
 		return nil

@@ -175,10 +175,14 @@ func TestNewMetricsWithOptions(t *testing.T) {
 		// Verify that additional metrics are created with WithAccessLog option
 		require.NotNil(t, m.RequestCount, "RequestCount should be initialized with WithAccessLog option")
 		require.NotNil(t, m.RequestDuration, "RequestDuration should be initialized with WithAccessLog option")
+		require.NotNil(t, m.ResponseSize, "ResponseSize should be initialized with WithAccessLog option")
+		require.NotNil(t, m.RequestSize, "RequestSize should be initialized with WithAccessLog option")
 
 		// Test that we can use the additional metrics
 		m.RequestCount.WithLabelValues("200", "GET", "example.com", "/test").Inc()
 		m.RequestDuration.WithLabelValues("200", "GET", "example.com", "/test").Observe(0.5)
+		m.RequestSize.WithLabelValues("200", "GET", "example.com", "/test").Observe(100.0)
+		m.ResponseSize.WithLabelValues("200", "GET", "example.com", "/test").Observe(200.0)
 
 		// Gather metrics to verify they are registered
 		gathered, err := reg.Gather()
@@ -187,6 +191,8 @@ func TestNewMetricsWithOptions(t *testing.T) {
 
 		foundRequestCount := false
 		foundRequestDuration := false
+		foundResponseSize := false
+		foundRequestSize := false
 
 		for _, metric := range gathered {
 			switch metric.GetName() {
@@ -209,7 +215,6 @@ func TestNewMetricsWithOptions(t *testing.T) {
 					require.True(t, exists, "Unexpected label: %s", label.GetName())
 					require.Equal(t, expectedValue, label.GetValue())
 				}
-
 			case "entra_phishing_detection_http_request_duration_seconds":
 				foundRequestDuration = true
 				require.Len(t, metric.GetMetric(), 1)
@@ -232,11 +237,57 @@ func TestNewMetricsWithOptions(t *testing.T) {
 					require.True(t, exists, "Unexpected label: %s", label.GetName())
 					require.Equal(t, expectedValue, label.GetValue())
 				}
+			case "entra_phishing_detection_http_response_size_bytes":
+				foundResponseSize = true
+				require.Len(t, metric.GetMetric(), 1)
+				histogram := metric.GetMetric()[0].GetHistogram()
+				require.NotNil(t, histogram)
+				require.Equal(t, uint64(1), histogram.GetSampleCount())
+				require.Equal(t, 200.0, histogram.GetSampleSum()) // nolint:testifylint
+
+				// Verify labels
+				labels := metric.GetMetric()[0].GetLabel()
+				require.Len(t, labels, 4)
+				expectedLabels := map[string]string{
+					"code":   "200",
+					"method": "GET",
+					"host":   "example.com",
+					"path":   "/test",
+				}
+				for _, label := range labels {
+					expectedValue, exists := expectedLabels[label.GetName()]
+					require.True(t, exists, "Unexpected label: %s", label.GetName())
+					require.Equal(t, expectedValue, label.GetValue())
+				}
+			case "entra_phishing_detection_http_request_size_bytes":
+				foundRequestSize = true
+				require.Len(t, metric.GetMetric(), 1)
+				histogram := metric.GetMetric()[0].GetHistogram()
+				require.NotNil(t, histogram)
+				require.Equal(t, uint64(1), histogram.GetSampleCount())
+				require.Equal(t, 100.0, histogram.GetSampleSum()) // nolint:testifylint
+
+				// Verify labels
+				labels := metric.GetMetric()[0].GetLabel()
+				require.Len(t, labels, 4)
+				expectedLabels := map[string]string{
+					"code":   "200",
+					"method": "GET",
+					"host":   "example.com",
+					"path":   "/test",
+				}
+				for _, label := range labels {
+					expectedValue, exists := expectedLabels[label.GetName()]
+					require.True(t, exists, "Unexpected label: %s", label.GetName())
+					require.Equal(t, expectedValue, label.GetValue())
+				}
 			}
 		}
 
 		require.True(t, foundRequestCount, "Expected http_requests_total to be found in gathered metrics")
 		require.True(t, foundRequestDuration, "Expected http_request_duration_seconds to be found in gathered metrics")
+		require.True(t, foundResponseSize, "Expected http_response_size_bytes to be found in gathered metrics")
+		require.True(t, foundRequestSize, "Expected http_request_size_bytes to be found in gathered metrics")
 	})
 
 	t.Run("Without options", func(t *testing.T) {
@@ -248,6 +299,8 @@ func TestNewMetricsWithOptions(t *testing.T) {
 		// Verify that optional metrics are NOT created without options
 		require.Nil(t, m.RequestCount, "RequestCount should be nil without WithAccessLog option")
 		require.Nil(t, m.RequestDuration, "RequestDuration should be nil without WithAccessLog option")
+		require.Nil(t, m.ResponseSize, "ResponseSize should be nil without WithAccessLog option")
+		require.Nil(t, m.RequestSize, "RequestSize should be nil without WithAccessLog option")
 
 		// Gather metrics to verify only basic metrics are present
 		gathered, err := reg.Gather()
@@ -256,18 +309,26 @@ func TestNewMetricsWithOptions(t *testing.T) {
 
 		foundRequestCount := false
 		foundRequestDuration := false
+		foundResponseSize := false
+		foundRequestSize := false
 
 		for _, metric := range gathered {
-			if metric.GetName() == "entra_phishing_detection_http_requests_total" {
+			switch metric.GetName() {
+			case "entra_phishing_detection_http_requests_total":
 				foundRequestCount = true
-			}
-			if metric.GetName() == "entra_phishing_detection_http_request_duration_seconds" {
+			case "entra_phishing_detection_http_request_duration_seconds":
 				foundRequestDuration = true
+			case "entra_phishing_detection_http_response_size_bytes":
+				foundResponseSize = true
+			case "entra_phishing_detection_http_request_size_bytes":
+				foundRequestSize = true
 			}
 		}
 
 		require.False(t, foundRequestCount, "http_requests_total should not be present without WithAccessLog option")
 		require.False(t, foundRequestDuration, "http_request_duration_seconds should not be present without WithAccessLog option")
+		require.False(t, foundResponseSize, "http_response_size_bytes should not be present without WithAccessLog option")
+		require.False(t, foundRequestSize, "http_request_size_bytes should not be present without WithAccessLog option")
 	})
 
 	t.Run("Option registration error", func(t *testing.T) {
