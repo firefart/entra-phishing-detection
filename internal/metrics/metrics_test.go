@@ -23,11 +23,13 @@ func TestNewMetrics(t *testing.T) {
 	// we need to increment at least once so it will show up in the metrics
 	testMetric.Add(69)
 	m.ImageHits.WithLabelValues("host.com", "en", "success").Add(69)
+	m.Errors.WithLabelValues("error-host.com").Add(42)
 	gathered, err := reg.Gather()
 	require.NoError(t, err)
 	require.NotEmpty(t, gathered)
 	foundCounter := false
 	foundCustom := false
+	foundErrors := false
 	for _, metric := range gathered {
 		if metric.GetName() == "test_total" {
 			foundCounter = true
@@ -48,9 +50,20 @@ func TestNewMetrics(t *testing.T) {
 			require.Equal(t, "status", labels[2].GetName())
 			require.Equal(t, "success", labels[2].GetValue())
 		}
+		if metric.GetName() == "entra_phishing_detection_errors_total" {
+			foundErrors = true
+			require.Len(t, metric.GetMetric(), 1)
+			tmp := metric.GetMetric()[0]
+			require.Equal(t, float64(42), tmp.GetCounter().GetValue()) // nolint:testifylint
+			labels := tmp.GetLabel()
+			require.Len(t, labels, 1)
+			require.Equal(t, "host", labels[0].GetName())
+			require.Equal(t, "error-host.com", labels[0].GetValue())
+		}
 	}
 	require.True(t, foundCounter, "Expected test_total to be found in gathered metrics")
 	require.True(t, foundCustom, "Expected entra_phishing_detection_image_hits_total to be found in gathered metrics")
+	require.True(t, foundErrors, "Expected entra_phishing_detection_errors_total to be found in gathered metrics")
 }
 
 func TestNewMetricsErrors(t *testing.T) {
@@ -67,6 +80,66 @@ func TestNewMetricsErrors(t *testing.T) {
 	require.Error(t, err)
 	require.Nil(t, m2)
 	require.Contains(t, err.Error(), "failed to register")
+}
+
+func TestMetricsErrorsLabels(t *testing.T) {
+	reg := prometheus.NewRegistry()
+	m, err := NewMetrics(reg)
+	require.NoError(t, err)
+	require.NotNil(t, m)
+
+	// Test different host error combinations
+	testCases := []struct {
+		host  string
+		value float64
+	}{
+		{"example.com", 5.0},
+		{"test.com", 3.0},
+		{"another.com", 7.0},
+		{"example.com", 2.0}, // Same host, additional errors
+	}
+
+	for _, tc := range testCases {
+		m.Errors.WithLabelValues(tc.host).Add(tc.value)
+	}
+
+	// Gather metrics to verify all label combinations are recorded
+	gathered, err := reg.Gather()
+	require.NoError(t, err)
+
+	var errorsMetric *dto.MetricFamily
+	for _, metric := range gathered {
+		if metric.GetName() == "entra_phishing_detection_errors_total" {
+			errorsMetric = metric
+			break
+		}
+	}
+
+	require.NotNil(t, errorsMetric)
+	// Should have 3 unique hosts (example.com, test.com, another.com)
+	require.Len(t, errorsMetric.GetMetric(), 3)
+
+	// Verify each metric has correct labels and values
+	metricsByHost := make(map[string]float64)
+	for _, metric := range errorsMetric.GetMetric() {
+		labels := metric.GetLabel()
+		require.Len(t, labels, 1)
+
+		var host string
+		for _, label := range labels {
+			if label.GetName() == "host" {
+				host = label.GetValue()
+				break
+			}
+		}
+
+		metricsByHost[host] = metric.GetCounter().GetValue()
+	}
+
+	// Verify expected values (example.com should have 5.0 + 2.0 = 7.0)
+	require.Equal(t, 7.0, metricsByHost["example.com"]) // nolint: testifylint
+	require.Equal(t, 3.0, metricsByHost["test.com"])    // nolint: testifylint
+	require.Equal(t, 7.0, metricsByHost["another.com"]) // nolint: testifylint
 }
 
 func TestMetricsImageHitsLabels(t *testing.T) {
@@ -177,12 +250,15 @@ func TestNewMetricsWithOptions(t *testing.T) {
 		require.NotNil(t, m.RequestDuration, "RequestDuration should be initialized with WithAccessLog option")
 		require.NotNil(t, m.ResponseSize, "ResponseSize should be initialized with WithAccessLog option")
 		require.NotNil(t, m.RequestSize, "RequestSize should be initialized with WithAccessLog option")
+		// Errors metric should always be initialized regardless of options
+		require.NotNil(t, m.Errors, "Errors should always be initialized")
 
 		// Test that we can use the additional metrics
 		m.RequestCount.WithLabelValues("200", "GET", "example.com", "/test").Inc()
 		m.RequestDuration.WithLabelValues("200", "GET", "example.com", "/test").Observe(0.5)
 		m.RequestSize.WithLabelValues("200", "GET", "example.com", "/test").Observe(100.0)
 		m.ResponseSize.WithLabelValues("200", "GET", "example.com", "/test").Observe(200.0)
+		m.Errors.WithLabelValues("example.com").Add(3.0)
 
 		// Gather metrics to verify they are registered
 		gathered, err := reg.Gather()
@@ -193,6 +269,7 @@ func TestNewMetricsWithOptions(t *testing.T) {
 		foundRequestDuration := false
 		foundResponseSize := false
 		foundRequestSize := false
+		foundErrors := false
 
 		for _, metric := range gathered {
 			switch metric.GetName() {
@@ -281,6 +358,16 @@ func TestNewMetricsWithOptions(t *testing.T) {
 					require.True(t, exists, "Unexpected label: %s", label.GetName())
 					require.Equal(t, expectedValue, label.GetValue())
 				}
+			case "entra_phishing_detection_errors_total":
+				foundErrors = true
+				require.Len(t, metric.GetMetric(), 1)
+				require.Equal(t, 3.0, metric.GetMetric()[0].GetCounter().GetValue()) // nolint:testifylint
+
+				// Verify labels
+				labels := metric.GetMetric()[0].GetLabel()
+				require.Len(t, labels, 1)
+				require.Equal(t, "host", labels[0].GetName())
+				require.Equal(t, "example.com", labels[0].GetValue())
 			}
 		}
 
@@ -288,6 +375,7 @@ func TestNewMetricsWithOptions(t *testing.T) {
 		require.True(t, foundRequestDuration, "Expected http_request_duration_seconds to be found in gathered metrics")
 		require.True(t, foundResponseSize, "Expected http_response_size_bytes to be found in gathered metrics")
 		require.True(t, foundRequestSize, "Expected http_request_size_bytes to be found in gathered metrics")
+		require.True(t, foundErrors, "Expected errors_total to be found in gathered metrics")
 	})
 
 	t.Run("Without options", func(t *testing.T) {
@@ -301,6 +389,11 @@ func TestNewMetricsWithOptions(t *testing.T) {
 		require.Nil(t, m.RequestDuration, "RequestDuration should be nil without WithAccessLog option")
 		require.Nil(t, m.ResponseSize, "ResponseSize should be nil without WithAccessLog option")
 		require.Nil(t, m.RequestSize, "RequestSize should be nil without WithAccessLog option")
+		// Errors metric should always be initialized regardless of options
+		require.NotNil(t, m.Errors, "Errors should always be initialized")
+
+		// Test the errors metric which should always be present
+		m.Errors.WithLabelValues("test-host.com").Add(5.0)
 
 		// Gather metrics to verify only basic metrics are present
 		gathered, err := reg.Gather()
@@ -311,6 +404,7 @@ func TestNewMetricsWithOptions(t *testing.T) {
 		foundRequestDuration := false
 		foundResponseSize := false
 		foundRequestSize := false
+		foundErrors := false
 
 		for _, metric := range gathered {
 			switch metric.GetName() {
@@ -322,6 +416,16 @@ func TestNewMetricsWithOptions(t *testing.T) {
 				foundResponseSize = true
 			case "entra_phishing_detection_http_request_size_bytes":
 				foundRequestSize = true
+			case "entra_phishing_detection_errors_total":
+				foundErrors = true
+				require.Len(t, metric.GetMetric(), 1)
+				require.Equal(t, 5.0, metric.GetMetric()[0].GetCounter().GetValue()) // nolint:testifylint
+
+				// Verify labels
+				labels := metric.GetMetric()[0].GetLabel()
+				require.Len(t, labels, 1)
+				require.Equal(t, "host", labels[0].GetName())
+				require.Equal(t, "test-host.com", labels[0].GetValue())
 			}
 		}
 
@@ -329,6 +433,7 @@ func TestNewMetricsWithOptions(t *testing.T) {
 		require.False(t, foundRequestDuration, "http_request_duration_seconds should not be present without WithAccessLog option")
 		require.False(t, foundResponseSize, "http_response_size_bytes should not be present without WithAccessLog option")
 		require.False(t, foundRequestSize, "http_request_size_bytes should not be present without WithAccessLog option")
+		require.True(t, foundErrors, "errors_total should always be present")
 	})
 
 	t.Run("Option registration error", func(t *testing.T) {

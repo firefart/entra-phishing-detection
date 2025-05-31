@@ -59,7 +59,8 @@ func NewServer(opts ...OptionsServerFunc) (http.Handler, error) {
 
 	r := router.New()
 
-	r.SetErrorHandler(func(w http.ResponseWriter, _ *http.Request, err error) {
+	r.SetErrorHandler(func(w http.ResponseWriter, r *http.Request, err error) {
+		s.metrics.Errors.WithLabelValues(r.Host).Inc()
 		s.logger.Error("error on request", slog.String("err", err.Error()))
 		var httpErr *httperror.HTTPError
 		if errors.As(err, &httpErr) {

@@ -8,6 +8,7 @@ import (
 )
 
 type Metrics struct {
+	Errors          *prometheus.CounterVec
 	ImageHits       *prometheus.CounterVec
 	RequestCount    *prometheus.CounterVec
 	RequestDuration *prometheus.HistogramVec
@@ -18,6 +19,14 @@ type Metrics struct {
 func NewMetrics(reg prometheus.Registerer, opts ...OptionsMetricsFunc) (*Metrics, error) {
 	nameSpace := "entra_phishing_detection"
 	m := &Metrics{
+		Errors: prometheus.NewCounterVec(
+			prometheus.CounterOpts{
+				Namespace: nameSpace,
+				Name:      "errors_total",
+				Help:      "How many errors were encountered while processing requests.",
+			},
+			[]string{"host"},
+		),
 		ImageHits: prometheus.NewCounterVec(
 			prometheus.CounterOpts{
 				Namespace: nameSpace,
@@ -33,6 +42,9 @@ func NewMetrics(reg prometheus.Registerer, opts ...OptionsMetricsFunc) (*Metrics
 	}
 	if err := reg.Register(collectors.NewProcessCollector(collectors.ProcessCollectorOpts{})); err != nil {
 		return nil, fmt.Errorf("failed to register process collector: %w", err)
+	}
+	if err := reg.Register(m.Errors); err != nil {
+		return nil, fmt.Errorf("failed to register errors metric: %w", err)
 	}
 	if err := reg.Register(m.ImageHits); err != nil {
 		return nil, fmt.Errorf("failed to register image hits metric: %w", err)

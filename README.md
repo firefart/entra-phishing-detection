@@ -302,7 +302,7 @@ Here's a complete example configuration for a production deployment:
 ### Metrics
 
 The application exposes Prometheus metrics on the configured metrics port. Available metrics include:
-- Request counts and response times
+- Request counts, response times, request and response size
 - Phishing detection events
 - Client origin distributions
 - Error rates
