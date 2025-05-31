@@ -26,6 +26,16 @@
       "compress": true
     }
   },
+  "images": {
+    "ok": {
+      "de": "./internal/server/assets/ok.svg",
+      "en": "./internal/server/assets/ok.svg"
+    },
+    "phishing": {
+      "de": "./internal/server/assets/phishing_de.svg",
+      "en": "./internal/server/assets/phishing_en.svg"
+    }
+  },
   "timeout": "5s",
   "allowed_origins": [
     "login.microsoftonline.com"

@@ -135,13 +135,17 @@ func run(ctx context.Context, logger *slog.Logger, configuration config.Configur
 		server.WithConfig(configuration),
 		server.WithDebug(cliOptions.debugMode),
 		server.WithMetrics(m),
+		server.WithCustomImages(configuration.Images),
 	}
 
 	if configuration.Logging.AccessLog {
 		options = append(options, server.WithAccessLog())
 	}
 
-	s := server.NewServer(options...)
+	s, err := server.NewServer(options...)
+	if err != nil {
+		return fmt.Errorf("failed to create server: %w", err)
+	}
 
 	srv := &nethttp.Server{
 		Addr:         configuration.Server.Listen,

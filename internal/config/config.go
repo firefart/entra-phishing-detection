@@ -20,7 +20,13 @@ type Configuration struct {
 	Server         Server        `koanf:"server"`
 	Logging        Logging       `koanf:"logging"`
 	Timeout        time.Duration `koanf:"timeout" validate:"required"`
+	Images         Images        `koanf:"images"`
 	AllowedOrigins []string      `koanf:"allowed_origins" validate:"required,dive,fqdn"`
+}
+
+type Images struct {
+	OK       map[string]string `koanf:"ok"`
+	Phishing map[string]string `koanf:"phishing"`
 }
 
 type Server struct {
@@ -121,6 +127,38 @@ func GetConfig(f string) (Configuration, error) {
 	config.Server.PathImage = strings.TrimLeft(config.Server.PathImage, "/")
 	config.Server.PathHealth = strings.TrimLeft(config.Server.PathHealth, "/")
 	config.Server.PathVersion = strings.TrimLeft(config.Server.PathVersion, "/")
+
+	if len(config.Images.OK) > 0 {
+		// ensure that the image names are lowercase
+		for k, v := range config.Images.OK {
+			if strings.Contains(k, "-") {
+				return Configuration{}, fmt.Errorf("ok image name %q contains a dash, please only use the primary language", k)
+			}
+			lowerK := strings.ToLower(k)
+			if lowerK != k {
+				config.Images.OK[lowerK] = v
+				delete(config.Images.OK, k)
+			}
+		}
+		for k, v := range config.Images.Phishing {
+			if strings.Contains(k, "-") {
+				return Configuration{}, fmt.Errorf("phishing image name %q contains a dash, please only use the primary language", k)
+			}
+			lowerK := strings.ToLower(k)
+			if lowerK != k {
+				config.Images.Phishing[lowerK] = v
+				delete(config.Images.Phishing, k)
+			}
+		}
+
+		if _, ok := config.Images.OK["en"]; !ok {
+			return Configuration{}, errors.New("ok image 'en' is required, please add it to the images map")
+		}
+
+		if _, ok := config.Images.Phishing["en"]; !ok {
+			return Configuration{}, errors.New("phishing image 'en' is required, please add it to the images map")
+		}
+	}
 
 	return config, nil
 }

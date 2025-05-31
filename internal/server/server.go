@@ -15,11 +15,13 @@ import (
 )
 
 type server struct {
-	logger    *slog.Logger
-	config    config.Configuration
-	debug     bool
-	metrics   *metrics.Metrics
-	accessLog bool
+	logger         *slog.Logger
+	config         config.Configuration
+	debug          bool
+	metrics        *metrics.Metrics
+	accessLog      bool
+	imagesOK       map[string][]byte
+	imagesPhishing map[string][]byte
 }
 
 func notFound(w http.ResponseWriter, _ *http.Request) error {
@@ -28,14 +30,24 @@ func notFound(w http.ResponseWriter, _ *http.Request) error {
 	return nil
 }
 
-func NewServer(opts ...OptionsServerFunc) http.Handler {
+func NewServer(opts ...OptionsServerFunc) (http.Handler, error) {
 	s := server{
 		logger: slog.New(slog.DiscardHandler),
 		debug:  false,
 	}
 
+	// baked in images, can be overriden by options
+	s.imagesOK = make(map[string][]byte)
+	s.imagesOK["en"] = imageOK
+	s.imagesOK["de"] = imageOK
+	s.imagesPhishing = make(map[string][]byte)
+	s.imagesPhishing["en"] = imagePhishingEN
+	s.imagesPhishing["de"] = imagePhishingDE
+
 	for _, o := range opts {
-		o(&s)
+		if err := o(&s); err != nil {
+			return nil, err
+		}
 	}
 
 	secretKeyHeaderMW := middleware.SecretKeyHeaderConfig{
@@ -90,21 +102,13 @@ func NewServer(opts ...OptionsServerFunc) http.Handler {
 	s.logger.Info("health route", slog.String("route", healthRoute))
 	s.logger.Info("version route", slog.String("route", versionRoute))
 
-	// TODO: make overrideable
-	imagesOK := make(map[string][]byte)
-	imagesOK["en"] = imageOK
-	imagesOK["de"] = imageOK
-	imagesPhishing := make(map[string][]byte)
-	imagesPhishing["en"] = imagePhishingEN
-	imagesPhishing["de"] = imagePhishingDE
-
 	// image generation route
 	r.HandleFunc(fmt.Sprintf("GET %s", imageRoute), handlers.NewImageHandler(handlers.ImageHandlerOptions{
 		AllowedOrigins: s.config.AllowedOrigins,
 		Logger:         s.logger,
 		Metrics:        s.metrics,
-		ImagesOK:       imagesOK,
-		ImagesPhishing: imagesPhishing,
+		ImagesOK:       s.imagesOK,
+		ImagesPhishing: s.imagesPhishing,
 	}).Handler)
 	// health check for monitoring
 	r.HandleFunc(fmt.Sprintf("GET %s", healthRoute), handlers.NewHealthHandler().Handler)
@@ -117,5 +121,5 @@ func NewServer(opts ...OptionsServerFunc) http.Handler {
 	// custom 404 for the rest
 	r.HandleFunc("/", notFound)
 
-	return r
+	return r, nil
 }

@@ -33,9 +33,11 @@ type ImageHandlerOptions struct {
 	// Metrics holds the metrics instance for tracking image hits.
 	Metrics *metrics.Metrics
 	// Logger is the logger instance for logging events.
-	Logger         *slog.Logger
-	ImagesOK       map[string][]byte // Optional, for custom images
-	ImagesPhishing map[string][]byte // Optional, for custom phishing images
+	Logger *slog.Logger
+	// ImagesOK contains the images to return for safe URLs.
+	ImagesOK map[string][]byte
+	// ImagesPhishing contains the images to return for phishing attempts.
+	ImagesPhishing map[string][]byte
 }
 
 func NewImageHandler(opts ImageHandlerOptions) *ImageHandler {

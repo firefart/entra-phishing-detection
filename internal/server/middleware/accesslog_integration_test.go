@@ -41,13 +41,14 @@ func TestAccessLogMiddlewareIntegration(t *testing.T) {
 	require.NoError(t, err)
 
 	// Create server with accesslog middleware
-	handler := server.NewServer(
+	handler, err := server.NewServer(
 		server.WithLogger(logger),
 		server.WithConfig(cfg),
 		server.WithMetrics(m),
 		server.WithDebug(false),
 		server.WithAccessLog(),
 	)
+	require.NoError(t, err)
 
 	t.Run("logs image endpoint request", func(t *testing.T) {
 		// Clear previous log output
