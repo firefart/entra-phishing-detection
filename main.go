@@ -17,6 +17,7 @@ import (
 	"github.com/firefart/entra-phishing-detection/internal/config"
 	"github.com/firefart/entra-phishing-detection/internal/metrics"
 	"github.com/firefart/entra-phishing-detection/internal/server"
+	"github.com/goforj/godump"
 
 	"github.com/hashicorp/go-multierror"
 	"github.com/prometheus/client_golang/prometheus"
@@ -65,6 +66,10 @@ func main() {
 		}
 		// a normal error
 		log.Fatalln("Error in config:", err.Error())
+	}
+
+	if cli.debugMode {
+		godump.Dump(configuration)
 	}
 
 	// if we are in config check mode, we just validate the config and exit

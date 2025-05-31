@@ -140,6 +140,12 @@ func GetConfig(f string) (Configuration, error) {
 				delete(config.Images.OK, k)
 			}
 		}
+		if _, ok := config.Images.OK["en"]; !ok {
+			return Configuration{}, errors.New("ok image 'en' is required, please add it to the images map")
+		}
+	}
+
+	if len(config.Images.Phishing) > 0 {
 		for k, v := range config.Images.Phishing {
 			if strings.Contains(k, "-") {
 				return Configuration{}, fmt.Errorf("phishing image name %q contains a dash, please only use the primary language", k)
@@ -149,10 +155,6 @@ func GetConfig(f string) (Configuration, error) {
 				config.Images.Phishing[lowerK] = v
 				delete(config.Images.Phishing, k)
 			}
-		}
-
-		if _, ok := config.Images.OK["en"]; !ok {
-			return Configuration{}, errors.New("ok image 'en' is required, please add it to the images map")
 		}
 
 		if _, ok := config.Images.Phishing["en"]; !ok {
