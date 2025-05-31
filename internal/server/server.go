@@ -90,14 +90,21 @@ func NewServer(opts ...OptionsServerFunc) http.Handler {
 	s.logger.Info("health route", slog.String("route", healthRoute))
 	s.logger.Info("version route", slog.String("route", versionRoute))
 
+	// TODO: make overrideable
+	imagesOK := make(map[string][]byte)
+	imagesOK["en"] = imageOK
+	imagesOK["de"] = imageOK
+	imagesPhishing := make(map[string][]byte)
+	imagesPhishing["en"] = imagePhishingEN
+	imagesPhishing["de"] = imagePhishingDE
+
 	// image generation route
 	r.HandleFunc(fmt.Sprintf("GET %s", imageRoute), handlers.NewImageHandler(handlers.ImageHandlerOptions{
-		AllowedOrigins:  s.config.AllowedOrigins,
-		Logger:          s.logger,
-		Metrics:         s.metrics,
-		ImageOK:         imageOK,
-		ImagePhishingEN: imagePhishingEN,
-		ImagePhishingDE: imagePhishingDE,
+		AllowedOrigins: s.config.AllowedOrigins,
+		Logger:         s.logger,
+		Metrics:        s.metrics,
+		ImagesOK:       imagesOK,
+		ImagesPhishing: imagesPhishing,
 	}).Handler)
 	// health check for monitoring
 	r.HandleFunc(fmt.Sprintf("GET %s", healthRoute), handlers.NewHealthHandler().Handler)

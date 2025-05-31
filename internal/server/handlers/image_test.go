@@ -27,12 +27,11 @@ func TestImage(t *testing.T) {
 	m, err := metrics.NewMetrics(prometheus.NewRegistry())
 	require.NoError(t, err)
 	imageHandler := handlers.NewImageHandler(handlers.ImageHandlerOptions{
-		AllowedOrigins:  configuration.AllowedOrigins,
-		Logger:          logger,
-		Metrics:         m,
-		ImageOK:         []byte("imageOK"),
-		ImagePhishingEN: []byte("imagePhishingEN"),
-		ImagePhishingDE: []byte("imagePhishingDE"),
+		AllowedOrigins: configuration.AllowedOrigins,
+		Logger:         logger,
+		Metrics:        m,
+		ImagesOK:       map[string][]byte{"en": []byte("imageOK")},
+		ImagesPhishing: map[string][]byte{"en": []byte("imagePhishingEN"), "de": []byte("imagePhishingDE")},
 	})
 	req := httptest.NewRequest(http.MethodGet, "/", nil)
 	rec := httptest.NewRecorder()
@@ -120,12 +119,11 @@ func TestNewImageHandlerPanics(t *testing.T) {
 	require.NoError(t, err)
 
 	validOpts := handlers.ImageHandlerOptions{
-		AllowedOrigins:  []string{"example.com"},
-		Logger:          logger,
-		Metrics:         m,
-		ImageOK:         []byte("ok"),
-		ImagePhishingDE: []byte("phishing"),
-		ImagePhishingEN: []byte("phishing"),
+		AllowedOrigins: []string{"example.com"},
+		Logger:         logger,
+		Metrics:        m,
+		ImagesOK:       map[string][]byte{"en": []byte("imageOK")},
+		ImagesPhishing: map[string][]byte{"en": []byte("imagePhishingEN"), "de": []byte("imagePhishingDE")},
 	}
 
 	t.Run("nil logger panics", func(t *testing.T) {
@@ -146,7 +144,7 @@ func TestNewImageHandlerPanics(t *testing.T) {
 
 	t.Run("empty ImageOK panics", func(t *testing.T) {
 		opts := validOpts
-		opts.ImageOK = []byte{}
+		opts.ImagesOK = map[string][]byte{"en": {}}
 		require.Panics(t, func() {
 			handlers.NewImageHandler(opts)
 		})
@@ -154,39 +152,31 @@ func TestNewImageHandlerPanics(t *testing.T) {
 
 	t.Run("nil ImageOK panics", func(t *testing.T) {
 		opts := validOpts
-		opts.ImageOK = nil
+		opts.ImagesOK = nil
 		require.Panics(t, func() {
 			handlers.NewImageHandler(opts)
 		})
 	})
 
-	t.Run("empty ImagePhishingEN panics", func(t *testing.T) {
+	t.Run("empty ImagePhishing english panics", func(t *testing.T) {
 		opts := validOpts
-		opts.ImagePhishingEN = []byte{}
+		opts.ImagesPhishing = map[string][]byte{"en": {}}
 		require.Panics(t, func() {
 			handlers.NewImageHandler(opts)
 		})
 	})
 
-	t.Run("nil ImagePhishingEN panics", func(t *testing.T) {
+	t.Run("nil ImagePhishing panics", func(t *testing.T) {
 		opts := validOpts
-		opts.ImagePhishingEN = nil
+		opts.ImagesPhishing = nil
 		require.Panics(t, func() {
 			handlers.NewImageHandler(opts)
 		})
 	})
 
-	t.Run("empty ImagePhishingDE panics", func(t *testing.T) {
+	t.Run("empty ImagePhishing german panics", func(t *testing.T) {
 		opts := validOpts
-		opts.ImagePhishingDE = []byte{}
-		require.Panics(t, func() {
-			handlers.NewImageHandler(opts)
-		})
-	})
-
-	t.Run("nil ImagePhishingDE panics", func(t *testing.T) {
-		opts := validOpts
-		opts.ImagePhishingDE = nil
+		opts.ImagesPhishing = map[string][]byte{"de": {}}
 		require.Panics(t, func() {
 			handlers.NewImageHandler(opts)
 		})
@@ -199,12 +189,11 @@ func TestImageHandler_GetLanguageAndImage(t *testing.T) {
 	require.NoError(t, err)
 
 	imageHandler := handlers.NewImageHandler(handlers.ImageHandlerOptions{
-		AllowedOrigins:  []string{"example.com"},
-		Logger:          logger,
-		Metrics:         m,
-		ImageOK:         []byte("imageOK"),
-		ImagePhishingDE: []byte("imagePhishingDE"),
-		ImagePhishingEN: []byte("imagePhishingEN"),
+		AllowedOrigins: []string{"example.com"},
+		Logger:         logger,
+		Metrics:        m,
+		ImagesOK:       map[string][]byte{"en": []byte("imageOK")},
+		ImagesPhishing: map[string][]byte{"en": []byte("imagePhishingEN"), "de": []byte("imagePhishingDE")},
 	})
 
 	testCases := []struct {
@@ -371,12 +360,11 @@ func TestImageHandler_AcceptLanguageIntegration(t *testing.T) {
 	require.NoError(t, err)
 
 	imageHandler := handlers.NewImageHandler(handlers.ImageHandlerOptions{
-		AllowedOrigins:  configuration.AllowedOrigins,
-		Logger:          logger,
-		Metrics:         m,
-		ImageOK:         []byte("imageOK"),
-		ImagePhishingDE: []byte("imagePhishingDE"),
-		ImagePhishingEN: []byte("imagePhishingEN"),
+		AllowedOrigins: configuration.AllowedOrigins,
+		Logger:         logger,
+		Metrics:        m,
+		ImagesOK:       map[string][]byte{"en": []byte("imageOK")},
+		ImagesPhishing: map[string][]byte{"en": []byte("imagePhishingEN"), "de": []byte("imagePhishingDE")},
 	})
 
 	testCases := []struct {
@@ -476,6 +464,280 @@ func TestImageHandler_AcceptLanguageIntegration(t *testing.T) {
 			require.Equal(t, "no-store", rec.Header().Get("Cache-Control"))
 			require.Equal(t, "no-cache", rec.Header().Get("Pragma"))
 			require.Equal(t, "*", rec.Header().Get("Access-Control-Allow-Origin"))
+		})
+	}
+}
+
+func TestImageHandler_GetImageOK(t *testing.T) {
+	logger := slog.New(slog.DiscardHandler)
+	m, err := metrics.NewMetrics(prometheus.NewRegistry())
+	require.NoError(t, err)
+
+	imageHandler := handlers.NewImageHandler(handlers.ImageHandlerOptions{
+		AllowedOrigins: []string{"example.com"},
+		Logger:         logger,
+		Metrics:        m,
+		ImagesOK:       map[string][]byte{"en": []byte("imageOK_EN"), "de": []byte("imageOK_DE"), "fr": []byte("imageOK_FR")},
+		ImagesPhishing: map[string][]byte{"en": []byte("imagePhishingEN")},
+	})
+
+	testCases := []struct {
+		name           string
+		acceptLanguage string
+		expectedLang   string
+		expectedImage  []byte
+	}{
+		{
+			name:           "English language returns English OK image",
+			acceptLanguage: "en",
+			expectedLang:   "en",
+			expectedImage:  []byte("imageOK_EN"),
+		},
+		{
+			name:           "German language returns German OK image",
+			acceptLanguage: "de",
+			expectedLang:   "de",
+			expectedImage:  []byte("imageOK_DE"),
+		},
+		{
+			name:           "French language returns French OK image",
+			acceptLanguage: "fr",
+			expectedLang:   "fr",
+			expectedImage:  []byte("imageOK_FR"),
+		},
+		{
+			name:           "German with region code",
+			acceptLanguage: "de-DE",
+			expectedLang:   "de",
+			expectedImage:  []byte("imageOK_DE"),
+		},
+		{
+			name:           "English with region code",
+			acceptLanguage: "en-US",
+			expectedLang:   "en",
+			expectedImage:  []byte("imageOK_EN"),
+		},
+		{
+			name:           "Multiple languages - German first",
+			acceptLanguage: "de, en, fr",
+			expectedLang:   "de",
+			expectedImage:  []byte("imageOK_DE"),
+		},
+		{
+			name:           "Multiple languages - English first",
+			acceptLanguage: "en, de, fr",
+			expectedLang:   "en",
+			expectedImage:  []byte("imageOK_EN"),
+		},
+		{
+			name:           "Complex Accept-Language with German preferred",
+			acceptLanguage: "de-DE,de;q=0.9,en;q=0.8,fr;q=0.7",
+			expectedLang:   "de",
+			expectedImage:  []byte("imageOK_DE"),
+		},
+		{
+			name:           "Complex Accept-Language with French preferred",
+			acceptLanguage: "fr;q=0.9,de;q=0.8,en;q=0.7",
+			expectedLang:   "fr",
+			expectedImage:  []byte("imageOK_FR"),
+		},
+		{
+			name:           "Unsupported language defaults to English",
+			acceptLanguage: "es",
+			expectedLang:   "en",
+			expectedImage:  []byte("imageOK_EN"),
+		},
+		{
+			name:           "Empty Accept-Language defaults to English",
+			acceptLanguage: "",
+			expectedLang:   "en",
+			expectedImage:  []byte("imageOK_EN"),
+		},
+		{
+			name:           "Multiple unsupported languages defaults to English",
+			acceptLanguage: "es, it, pt",
+			expectedLang:   "en",
+			expectedImage:  []byte("imageOK_EN"),
+		},
+		{
+			name:           "Mixed supported and unsupported - supported wins",
+			acceptLanguage: "es, de, it",
+			expectedLang:   "de",
+			expectedImage:  []byte("imageOK_DE"),
+		},
+		{
+			name:           "Case insensitive language matching",
+			acceptLanguage: "DE-de",
+			expectedLang:   "de",
+			expectedImage:  []byte("imageOK_DE"),
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			req := httptest.NewRequest(http.MethodGet, "/", nil)
+			if tc.acceptLanguage != "" {
+				req.Header.Set("Accept-Language", tc.acceptLanguage)
+			}
+
+			// We need to test the method via reflection or create a helper method
+			// Since Go doesn't allow direct access to unexported methods, we'll use the Handler
+			// and set up a valid referer to trigger the OK path
+			req.Header.Set("Referer", "https://example.com/login")
+
+			rec := httptest.NewRecorder()
+			err := imageHandler.Handler(rec, req)
+
+			require.NoError(t, err)
+			require.Equal(t, http.StatusOK, rec.Code)
+			require.Equal(t, string(tc.expectedImage), rec.Body.String())
+		})
+	}
+}
+
+func TestImageHandler_GetImagePhishing(t *testing.T) {
+	logger := slog.New(slog.DiscardHandler)
+	m, err := metrics.NewMetrics(prometheus.NewRegistry())
+	require.NoError(t, err)
+
+	imageHandler := handlers.NewImageHandler(handlers.ImageHandlerOptions{
+		AllowedOrigins: []string{"example.com"},
+		Logger:         logger,
+		Metrics:        m,
+		ImagesOK:       map[string][]byte{"en": []byte("imageOK")},
+		ImagesPhishing: map[string][]byte{"en": []byte("imagePhishingEN"), "de": []byte("imagePhishingDE"), "fr": []byte("imagePhishingFR"), "es": []byte("imagePhishingES")},
+	})
+
+	testCases := []struct {
+		name           string
+		acceptLanguage string
+		expectedLang   string
+		expectedImage  []byte
+	}{
+		{
+			name:           "English language returns English phishing image",
+			acceptLanguage: "en",
+			expectedLang:   "en",
+			expectedImage:  []byte("imagePhishingEN"),
+		},
+		{
+			name:           "German language returns German phishing image",
+			acceptLanguage: "de",
+			expectedLang:   "de",
+			expectedImage:  []byte("imagePhishingDE"),
+		},
+		{
+			name:           "French language returns French phishing image",
+			acceptLanguage: "fr",
+			expectedLang:   "fr",
+			expectedImage:  []byte("imagePhishingFR"),
+		},
+		{
+			name:           "Spanish language returns Spanish phishing image",
+			acceptLanguage: "es",
+			expectedLang:   "es",
+			expectedImage:  []byte("imagePhishingES"),
+		},
+		{
+			name:           "German with region code",
+			acceptLanguage: "de-DE",
+			expectedLang:   "de",
+			expectedImage:  []byte("imagePhishingDE"),
+		},
+		{
+			name:           "English with region code",
+			acceptLanguage: "en-US",
+			expectedLang:   "en",
+			expectedImage:  []byte("imagePhishingEN"),
+		},
+		{
+			name:           "Spanish with region code",
+			acceptLanguage: "es-ES",
+			expectedLang:   "es",
+			expectedImage:  []byte("imagePhishingES"),
+		},
+		{
+			name:           "Multiple languages - German first",
+			acceptLanguage: "de, en, fr",
+			expectedLang:   "de",
+			expectedImage:  []byte("imagePhishingDE"),
+		},
+		{
+			name:           "Multiple languages - French first",
+			acceptLanguage: "fr, es, en",
+			expectedLang:   "fr",
+			expectedImage:  []byte("imagePhishingFR"),
+		},
+		{
+			name:           "Complex Accept-Language with Spanish preferred",
+			acceptLanguage: "es-ES,es;q=0.9,en;q=0.8,de;q=0.7",
+			expectedLang:   "es",
+			expectedImage:  []byte("imagePhishingES"),
+		},
+		{
+			name:           "Complex Accept-Language with French preferred",
+			acceptLanguage: "fr-FR,fr;q=0.9,de;q=0.8,en;q=0.7",
+			expectedLang:   "fr",
+			expectedImage:  []byte("imagePhishingFR"),
+		},
+		{
+			name:           "Unsupported language defaults to English",
+			acceptLanguage: "it",
+			expectedLang:   "en",
+			expectedImage:  []byte("imagePhishingEN"),
+		},
+		{
+			name:           "Empty Accept-Language defaults to English",
+			acceptLanguage: "",
+			expectedLang:   "en",
+			expectedImage:  []byte("imagePhishingEN"),
+		},
+		{
+			name:           "Multiple unsupported languages defaults to English",
+			acceptLanguage: "it, pt, nl",
+			expectedLang:   "en",
+			expectedImage:  []byte("imagePhishingEN"),
+		},
+		{
+			name:           "Mixed supported and unsupported - first supported wins",
+			acceptLanguage: "it, es, pt",
+			expectedLang:   "es",
+			expectedImage:  []byte("imagePhishingES"),
+		},
+		{
+			name:           "Case insensitive language matching",
+			acceptLanguage: "FR-fr",
+			expectedLang:   "fr",
+			expectedImage:  []byte("imagePhishingFR"),
+		},
+		{
+			name:           "Quality values with German preferred",
+			acceptLanguage: "en;q=0.7, de;q=0.9, fr;q=0.5",
+			expectedLang:   "de",
+			expectedImage:  []byte("imagePhishingDE"),
+		},
+		{
+			name:           "Quality values with French preferred",
+			acceptLanguage: "en;q=0.5, fr;q=0.9, es;q=0.7",
+			expectedLang:   "fr",
+			expectedImage:  []byte("imagePhishingFR"),
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			req := httptest.NewRequest(http.MethodGet, "/", nil)
+			if tc.acceptLanguage != "" {
+				req.Header.Set("Accept-Language", tc.acceptLanguage)
+			}
+
+			// Test via the Handler with no referer to trigger phishing path
+			rec := httptest.NewRecorder()
+			err := imageHandler.Handler(rec, req)
+
+			require.NoError(t, err)
+			require.Equal(t, http.StatusOK, rec.Code)
+			require.Equal(t, string(tc.expectedImage), rec.Body.String())
 		})
 	}
 }
