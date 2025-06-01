@@ -1,6 +1,9 @@
 ---
 extends: default
 
+ignore:
+  - helm-chart/
+
 rules:
   truthy: disable
   line-length: disable
