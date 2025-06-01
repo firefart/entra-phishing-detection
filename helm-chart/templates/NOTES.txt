@@ -1,0 +1,13 @@
+Hostnames:
+{{- if .Values.route.enabled -}}
+  https://{{ .Values.route.hostName }}/{{ .Values.configFile.pathImage }}
+  https://{{ .Values.route.hostName }}/{{ .Values.configFile.pathHealth }}
+  https://{{ .Values.route.hostName }}/{{ .Values.configFile.pathVersion }}
+  https://{{ .Values.route.hostNameMetrics }}/metrics
+{{- else if .Values.ingress.enabled }}
+{{- range $host := .Values.ingress.hosts }}
+  {{- range .paths }}
+  http{{ if $.Values.ingress.tls }}s{{ end }}://{{ $host.host }}{{ .path }}
+  {{- end }}
+{{- end }}
+{{- end }}

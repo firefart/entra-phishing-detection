@@ -1,0 +1,19 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "entra-phishing-detection.fullname" . }}
+  labels:
+    {{- include "entra-phishing-detection.labels" . | nindent 4 }}
+spec:
+  type: {{ .Values.service.type }}
+  ports:
+    - port: {{ .Values.service.port }}
+      targetPort: 8000
+      protocol: TCP
+      name: http
+    - port: {{ .Values.service.portMetrics }}
+      targetPort: 8001
+      protocol: TCP
+      name: metrics
+  selector:
+    {{- include "entra-phishing-detection.selectorLabels" . | nindent 4 }}

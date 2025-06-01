@@ -57,6 +57,7 @@ This service supports multiple clients/organizations. Simply create a subdomain 
 - 📊 **Prometheus Metrics**: Built-in metrics for monitoring and alerting
 - 🔧 **Flexible Configuration**: JSON config file with environment variable overrides
 - 🐳 **Docker Ready**: Includes Dockerfile and docker-compose setup
+- 🏎️ **Kubernetes Ready**: Includes sample helm chart to deploy to k8s or OpenShift
 - 📝 **Structured Logging**: JSON and text file logging with rotation support for k8s use
 - 🔒 **Security Headers**: Proper security middleware and header validation
 - 🏥 **Health Checks**: Built-in health check endpoint for load balancers
@@ -321,6 +322,11 @@ A health check endpoint is available at the configured path. This endpoint:
 - Validates application readiness
 - Checks dependency availability
 - Provides status information for load balancers
+
+## Kubernetes and OpenShift
+
+The `helm-chart` folder contains a sample Kubernetes config with a logging sidecar to forward all logs to a remote syslog siem.
+Just modify the values and configs to fit your needs.
 
 ## Security Considerations
 

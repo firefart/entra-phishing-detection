@@ -1,0 +1,18 @@
+{{- if .Values.route.enabled -}}
+kind: Route
+apiVersion: route.openshift.io/v1
+metadata:
+  name: {{ include "entra-phishing-detection.fullname" . }}
+  labels:
+    {{- include "entra-phishing-detection.labels" . | nindent 4 }}
+spec:
+  host: {{ .Values.route.hostName }}
+  tls:
+    termination: edge
+    insecureEdgeTerminationPolicy: None
+  port:
+    targetPort: http
+  to:
+    kind: Service
+    name: {{ include "entra-phishing-detection.fullname" . }}
+{{- end }}

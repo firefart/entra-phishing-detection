@@ -1,0 +1,80 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "entra-phishing-detection.fullname" . }}
+  labels:
+    {{- include "entra-phishing-detection.labels" . | nindent 4 }}
+spec:
+  {{- if not .Values.autoscaling.enabled }}
+  replicas: {{ .Values.replicaCount }}
+  {{- end }}
+  selector:
+    matchLabels:
+      {{- include "entra-phishing-detection.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        {{- include "entra-phishing-detection.labels" . | nindent 8 }}
+    spec:
+      serviceAccountName: {{ include "entra-phishing-detection.serviceAccountName" . }}
+      containers:
+        - name: {{ .Chart.Name }}
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          command: ["/app/app"]
+          args: ["-config", "/config/config.json"]
+          ports:
+            - name: http
+              containerPort: {{ .Values.service.port }}
+              protocol: TCP
+            - name: metrics
+              containerPort: {{ .Values.service.portMetrics }}
+              protocol: TCP
+          livenessProbe:
+            httpGet:
+              path: /{{ .Values.configFile.pathHealth }}
+              port: http
+          readinessProbe:
+            httpGet:
+              path: /{{ .Values.configFile.pathHealth }}
+              port: http
+          {{- with .Values.resources }}
+          resources:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          volumeMounts:
+            - name: log
+              mountPath: /var/log/entra
+            - name: config
+              mountPath: /config
+              readOnly: true
+        - name: {{ .Chart.Name }}-fluentbit
+          image: fluent/fluent-bit:latest
+          command: ["/fluent-bit/bin/fluent-bit"]
+          args: ["-c", "/config/fluentbit.yml"]
+          imagePullPolicy: Always
+          {{- with .Values.resources }}
+          resources:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          volumeMounts:
+            - name: log
+              mountPath: {{ .Values.pvc.logfilePath }}
+            - name: fluentbit-config
+              mountPath: /config
+      volumes:
+        - name: log
+          persistentVolumeClaim:
+            claimName: {{ include "entra-phishing-detection.fullname" . }}
+        - name: config
+          configMap:
+            name: {{ include "entra-phishing-detection.fullname" . }}
+            items:
+              - key: "config.json"
+                path: "config.json"
+        - name: fluentbit-config
+          configMap:
+            name: {{ include "entra-phishing-detection.fullname" . }}
+            items:
+              - key: "fluentbit.yml"
+                path: "fluentbit.yml"

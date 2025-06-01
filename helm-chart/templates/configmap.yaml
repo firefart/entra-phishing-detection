@@ -1,0 +1,68 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "entra-phishing-detection.fullname" . }}
+data:
+  config.json: |
+    {
+      "server": {
+        "listen": ":8000",
+        "listen_metrics": ":8001",
+        "graceful_timeout": {{ .Values.configFile.gracefulTimeout | toJson }},
+        "secret_key_header_name": {{ .Values.configFile.secretKeyHeaderName | toJson }},
+        "secret_key_header_value": {{ .Values.configFile.secretKeyHeaderValue | toJson }},
+        "ip_header": {{ .Values.configFile.ipHeader | toJson }},
+        "host_headers": {{ .Values.configFile.hostHeaders | toJson }},
+        "path_image": {{ .Values.configFile.pathImage | toJson }},
+        "path_health": {{ .Values.configFile.pathHealth | toJson }},
+        "path_version": {{ .Values.configFile.pathVersion | toJson }}
+      },
+      "logging": {
+        "access_log": true,
+        "json": true,
+        "log_file": "{{ .Values.pvc.logfilePath }}/log.log",
+        "rotate": {
+          "max_size": 100,
+          "max_age": 30,
+          "max_backups": 2,
+          "compress": false
+        }
+      },
+      "timeout": {{ .Values.configFile.timeout | toJson }},
+      "allowed_origins": {{ .Values.configFile.allowedOrigins | toJson }}
+    }
+  fluentbit.yml: |
+    ---
+    service:
+      flush: 1
+      log_level: info
+      hot_reload: on
+
+    parsers:
+      - name: json
+        format: json
+        time_key: time
+        time_keep: true
+        time_format: '%Y-%m-%dT%H:%M:%S.%L'
+
+    pipeline:
+      inputs:
+        - name: tail
+          path: {{ .Values.pvc.logfilePath }}/log.log
+          parser: json
+
+      filters:
+        - name: grep
+          match: '*'
+          exclude: $request_headers['user-agent'] kube-probe
+
+      outputs:
+        - name: stdout
+          match: '*'
+        - name: syslog
+          match: '*'
+          host: {{ .Values.siem.host | toYaml }}
+          port: {{ .Values.siem.port | toYaml }}
+          mode: {{ .Values.siem.mode | toYaml }}
+          syslog_format: rfc5424
+          syslog_maxsize: 4096
