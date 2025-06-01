@@ -30,3 +30,6 @@ entra-phishing-detection
 Caddyfile
 .env
 helm
+helm-chart/
+.vscode/
+.prettierignore
