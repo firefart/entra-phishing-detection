@@ -15,7 +15,7 @@ type responseWriter struct {
 	http.ResponseWriter
 	statusCode     int
 	written        bool
-	responseLength uint64
+	responseLength int64
 }
 
 func (rw *responseWriter) WriteHeader(statusCode int) {
@@ -32,7 +32,7 @@ func (rw *responseWriter) Write(data []byte) (int, error) {
 		rw.WriteHeader(http.StatusOK)
 	}
 	n, err := rw.ResponseWriter.Write(data)
-	rw.responseLength += uint64(n)
+	rw.responseLength += int64(n)
 	return n, err
 }
 
@@ -102,7 +102,7 @@ func AccessLog(config AccessLogConfig) func(next http.Handler) http.Handler {
 				slog.String("remote_addr", r.RemoteAddr),
 				slog.String("remote_ip", ip),
 				slog.Int64("request_body_length", r.ContentLength),
-				slog.Uint64("response_body_length", wrapped.responseLength),
+				slog.Int64("response_body_length", wrapped.responseLength),
 				slog.Int("status_code", wrapped.statusCode),
 				slog.Duration("duration", duration),
 			).WithGroup("request_headers").Info("request completed", headerAttrs...)
