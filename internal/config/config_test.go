@@ -413,7 +413,8 @@ func TestGetConfigNoFile(t *testing.T) {
 
 	// Should have default values
 	require.Equal(t, "127.0.0.1:8000", c.Server.Listen)
-	require.Equal(t, "127.0.0.1:8001", c.Server.ListenMetrics)
+	require.Empty(t, c.Server.ListenMetrics)
+	require.Empty(t, c.Server.ListenPprof)
 	require.Equal(t, 10*time.Second, c.Server.GracefulTimeout)
 	require.Equal(t, "X-Secret-Key-Header", c.Server.SecretKeyHeaderName)
 	require.Equal(t, "SECRET", c.Server.SecretKeyHeaderValue)

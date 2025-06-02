@@ -142,9 +142,9 @@ func TestAccessLogMiddlewareIntegration(t *testing.T) {
 		// Check request headers
 		require.Contains(t, requestLog, "request_headers")
 		headers := requestLog["request_headers"].(map[string]interface{})
-		require.Equal(t, "Mozilla/5.0 Integration Test", headers["user-agent"])
-		require.Equal(t, "https://phishing-site.com", headers["referer"])
-		require.Equal(t, "192.168.1.100", headers["x-real-ip"])
+		require.Equal(t, "Mozilla/5.0 Integration Test", headers["User-Agent"])
+		require.Equal(t, "https://phishing-site.com", headers["Referer"])
+		require.Equal(t, "192.168.1.100", headers["X-Real-Ip"])
 
 		// Verify metrics are collected correctly
 		gathered, err := registry.Gather()
@@ -241,7 +241,7 @@ func TestAccessLogMiddlewareIntegration(t *testing.T) {
 
 		// Check headers
 		headers := requestLog["request_headers"].(map[string]interface{})
-		require.Equal(t, "application/json", headers["accept"])
+		require.Equal(t, "application/json", headers["Accept"])
 
 		// Verify metrics are collected correctly
 		gathered, err := registry.Gather()
@@ -341,8 +341,8 @@ func TestAccessLogMiddlewareIntegration(t *testing.T) {
 
 		// Check that sensitive headers are logged (this is expected behavior)
 		headers := requestLog["request_headers"].(map[string]interface{})
-		require.Equal(t, "test-secret", headers["x-secret-key"])
-		require.Equal(t, "Bearer token123", headers["authorization"])
+		require.Equal(t, "test-secret", headers["X-Secret-Key"])
+		require.Equal(t, "Bearer token123", headers["Authorization"])
 
 		// Verify metrics are collected correctly
 		gathered, err := registry.Gather()

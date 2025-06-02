@@ -9,10 +9,12 @@ import (
 	"log"
 	"log/slog"
 	nethttp "net/http"
+	"net/http/pprof"
 	"os"
 	"os/signal"
 	"runtime/debug"
 	"syscall"
+	"time"
 
 	"github.com/firefart/entra-phishing-detection/internal/config"
 	"github.com/firefart/entra-phishing-detection/internal/metrics"
@@ -174,25 +176,57 @@ func run(ctx context.Context, logger *slog.Logger, configuration config.Configur
 		}
 	}()
 
-	muxMetrics := nethttp.NewServeMux()
-	muxMetrics.Handle("/metrics", promhttp.HandlerFor(reg, promhttp.HandlerOpts{Registry: reg}))
-	srvMetrics := &nethttp.Server{
-		Addr:         configuration.Server.ListenMetrics,
-		Handler:      muxMetrics,
-		ReadTimeout:  configuration.Timeout,
-		WriteTimeout: configuration.Timeout,
+	var srvMetrics *nethttp.Server
+	if configuration.Server.ListenMetrics != "" {
+		muxMetrics := nethttp.NewServeMux()
+		muxMetrics.Handle("GET /metrics", promhttp.HandlerFor(reg, promhttp.HandlerOpts{Registry: reg}))
+		srvMetrics = &nethttp.Server{
+			Addr:         configuration.Server.ListenMetrics,
+			Handler:      muxMetrics,
+			ReadTimeout:  configuration.Timeout,
+			WriteTimeout: configuration.Timeout,
+		}
+
+		go func() {
+			logger.Info("Starting metrics server",
+				slog.String("host", configuration.Server.ListenMetrics),
+			)
+			if err := srvMetrics.ListenAndServe(); err != nil && !errors.Is(err, nethttp.ErrServerClosed) {
+				logger.Error("error on metrics listenandserve", slog.String("err", err.Error()))
+				// emit signal to kill server
+				cancel()
+			}
+		}()
 	}
 
-	go func() {
-		logger.Info("Starting metrics server",
-			slog.String("host", configuration.Server.ListenMetrics),
-		)
-		if err := srvMetrics.ListenAndServe(); err != nil && !errors.Is(err, nethttp.ErrServerClosed) {
-			logger.Error("error on metrics listenandserve", slog.String("err", err.Error()))
-			// emit signal to kill server
-			cancel()
+	var srvPprof *nethttp.Server
+	if configuration.Server.ListenPprof != "" {
+		muxPprof := nethttp.NewServeMux()
+		// copied from https://go.dev/src/net/http/pprof/pprof.go
+		muxPprof.HandleFunc("GET /debug/pprof/", pprof.Index)
+		muxPprof.HandleFunc("GET /debug/pprof/cmdline", pprof.Cmdline)
+		muxPprof.HandleFunc("GET /debug/pprof/profile", pprof.Profile)
+		muxPprof.HandleFunc("GET /debug/pprof/symbol", pprof.Symbol)
+		muxPprof.HandleFunc("GET /debug/pprof/trace", pprof.Trace)
+		srvPprof = &nethttp.Server{
+			Addr:    configuration.Server.ListenPprof,
+			Handler: muxPprof,
+			// higher timeout for pprof
+			ReadTimeout:  2 * time.Minute,
+			WriteTimeout: 2 * time.Minute,
 		}
-	}()
+
+		go func() {
+			logger.Info("Starting pprof server",
+				slog.String("host", configuration.Server.ListenPprof),
+			)
+			if err := srvPprof.ListenAndServe(); err != nil && !errors.Is(err, nethttp.ErrServerClosed) {
+				logger.Error("error on pprof listenandserve", slog.String("err", err.Error()))
+				// emit signal to kill server
+				cancel()
+			}
+		}()
+	}
 
 	// wait for a signal
 	<-ctx.Done()
@@ -204,8 +238,15 @@ func run(ctx context.Context, logger *slog.Logger, configuration config.Configur
 	if err := srv.Shutdown(shutdownCtx); err != nil {
 		logger.Error("error on srv shutdown", slog.String("err", err.Error()))
 	}
-	if err := srvMetrics.Shutdown(shutdownCtx); err != nil {
-		logger.Error("error on metrics srv shutdown", slog.String("err", err.Error()))
+	if srvMetrics != nil {
+		if err := srvMetrics.Shutdown(shutdownCtx); err != nil {
+			logger.Error("error on metrics srv shutdown", slog.String("err", err.Error()))
+		}
+	}
+	if srvPprof != nil {
+		if err := srvPprof.Shutdown(shutdownCtx); err != nil {
+			logger.Error("error on pprof srv shutdown", slog.String("err", err.Error()))
+		}
 	}
 	return nil
 }

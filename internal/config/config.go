@@ -31,7 +31,8 @@ type Images struct {
 
 type Server struct {
 	Listen               string        `koanf:"listen" validate:"required,hostname_port"`
-	ListenMetrics        string        `koanf:"listen_metrics" validate:"required,hostname_port"`
+	ListenMetrics        string        `koanf:"listen_metrics" validate:"omitempty,hostname_port"`
+	ListenPprof          string        `koanf:"listen_pprof" validate:"omitempty,hostname_port"`
 	GracefulTimeout      time.Duration `koanf:"graceful_timeout" validate:"required"`
 	SecretKeyHeaderName  string        `koanf:"secret_key_header_name" validate:"required"`
 	SecretKeyHeaderValue string        `koanf:"secret_key_header_value" validate:"required"`
@@ -58,7 +59,6 @@ type Logging struct {
 var defaultConfig = Configuration{
 	Server: Server{
 		Listen:              "127.0.0.1:8000",
-		ListenMetrics:       "127.0.0.1:8001",
 		GracefulTimeout:     10 * time.Second,
 		SecretKeyHeaderName: "X-Secret-Key-Header",
 	},

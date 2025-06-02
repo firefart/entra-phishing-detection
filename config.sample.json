@@ -2,6 +2,7 @@
   "server": {
     "listen": ":8000",
     "listen_metrics": ":8001",
+    "listen_pprof": ":8002",
     "graceful_timeout": "5s",
     "secret_key_header_name": "X-Secret-Key-Header",
     "secret_key_header_value": "SECRET",

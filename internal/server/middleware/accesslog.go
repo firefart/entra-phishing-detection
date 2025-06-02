@@ -76,7 +76,7 @@ func AccessLog(config AccessLogConfig) func(next http.Handler) http.Handler {
 			// Prepare header attributes for logging
 			headerAttrs := make([]any, 0, len(r.Header))
 			for name, values := range r.Header {
-				headerAttrs = append(headerAttrs, slog.String(strings.ToLower(name), strings.Join(values, ", ")))
+				headerAttrs = append(headerAttrs, slog.String(http.CanonicalHeaderKey(name), strings.Join(values, ", ")))
 			}
 
 			// Labels: "code", "method", "host", "url"

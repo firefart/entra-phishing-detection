@@ -61,9 +61,9 @@ func TestAccessLog(t *testing.T) {
 		// Check request headers group
 		require.Contains(t, logEntry, "request_headers")
 		headers := logEntry["request_headers"].(map[string]interface{})
-		require.Equal(t, "test-agent", headers["user-agent"])
-		require.Equal(t, "custom-value", headers["x-custom-header"])
-		require.Equal(t, "https://example.com", headers["referer"])
+		require.Equal(t, "test-agent", headers["User-Agent"])
+		require.Equal(t, "custom-value", headers["X-Custom-Header"])
+		require.Equal(t, "https://example.com", headers["Referer"])
 	})
 
 	t.Run("logs error status code", func(t *testing.T) {
@@ -151,7 +151,7 @@ func TestAccessLog(t *testing.T) {
 		require.NoError(t, err)
 
 		headers := logEntry["request_headers"].(map[string]interface{})
-		require.Equal(t, "text/html, application/json", headers["accept"])
+		require.Equal(t, "text/html, application/json", headers["Accept"])
 	})
 
 	t.Run("measures duration correctly", func(t *testing.T) {
