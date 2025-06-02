@@ -5,7 +5,7 @@ go 1.24
 require (
 	github.com/charmbracelet/log v0.4.2
 	github.com/go-playground/validator/v10 v10.26.0
-	github.com/goforj/godump v1.0.5
+	github.com/goforj/godump v1.1.0
 	github.com/hashicorp/go-multierror v1.1.1
 	github.com/knadh/koanf/parsers/json v1.0.0
 	github.com/knadh/koanf/providers/env v1.1.0
@@ -63,7 +63,7 @@ require (
 	github.com/prometheus/procfs v0.16.1 // indirect
 	github.com/rivo/uniseg v0.4.7 // indirect
 	github.com/spf13/afero v1.14.0 // indirect
-	github.com/spf13/cast v1.9.0 // indirect
+	github.com/spf13/cast v1.9.1 // indirect
 	github.com/tdewolff/parse/v2 v2.8.1 // indirect
 	github.com/xo/terminfo v0.0.0-20220910002029-abceb7e1c41e // indirect
 	golang.org/x/crypto v0.38.0 // indirect
