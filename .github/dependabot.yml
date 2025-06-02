@@ -25,3 +25,8 @@ updates:
     directory: "/"
     schedule:
       interval: "weekly"
+
+  - package-ecosystem: "helm"
+    directory: "/helm-chart/"
+    schedule:
+      interval: "daily"

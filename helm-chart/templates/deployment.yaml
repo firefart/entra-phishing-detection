@@ -52,7 +52,7 @@ spec:
               mountPath: /config
               readOnly: true
         - name: {{ .Chart.Name }}-fluentbit
-          image: fluent/fluent-bit:latest
+          image: {{ .Values.image.fluentbit }}
           command: ["/fluent-bit/bin/fluent-bit"]
           args: ["-c", "/config/fluentbit.yml"]
           imagePullPolicy: Always
