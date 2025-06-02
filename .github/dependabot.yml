@@ -8,7 +8,7 @@ updates:
   - package-ecosystem: "gomod"
     directory: "/"
     schedule:
-      interval: "weekly"
+      interval: "daily"
 
   - package-ecosystem: "github-actions"
     directory: "/"
@@ -19,12 +19,17 @@ updates:
   - package-ecosystem: docker
     directory: "/"
     schedule:
-      interval: "weekly"
+      interval: "daily"
+
+  - package-ecosystem: docker-compose
+    directory: "/"
+    schedule:
+      interval: "daily"
 
   - package-ecosystem: "devcontainers"
     directory: "/"
     schedule:
-      interval: "weekly"
+      interval: "daily"
 
   - package-ecosystem: "helm"
     directory: "/helm-chart/"
