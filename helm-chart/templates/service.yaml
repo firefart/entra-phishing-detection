@@ -15,5 +15,9 @@ spec:
       targetPort: 8001
       protocol: TCP
       name: metrics
+    - port: {{ .Values.service.portPprof }}
+      targetPort: 8002
+      protocol: TCP
+      name: pprof
   selector:
     {{- include "entra-phishing-detection.selectorLabels" . | nindent 4 }}

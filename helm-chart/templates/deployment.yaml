@@ -30,6 +30,9 @@ spec:
             - name: metrics
               containerPort: {{ .Values.service.portMetrics }}
               protocol: TCP
+            - name: pprof
+              containerPort: {{ .Values.service.portPprof }}
+              protocol: TCP
           livenessProbe:
             httpGet:
               path: /{{ .Values.configFile.pathHealth }}

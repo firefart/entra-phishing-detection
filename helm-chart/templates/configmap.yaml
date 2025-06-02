@@ -8,6 +8,7 @@ data:
       "server": {
         "listen": ":8000",
         "listen_metrics": ":8001",
+        "listen_pprof": ":8002",
         "graceful_timeout": {{ .Values.configFile.gracefulTimeout | toJson }},
         "secret_key_header_name": {{ .Values.configFile.secretKeyHeaderName | toJson }},
         "secret_key_header_value": {{ .Values.configFile.secretKeyHeaderValue | toJson }},
