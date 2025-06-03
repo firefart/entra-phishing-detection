@@ -1,0 +1,12 @@
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: {{ include "entra-phishing-detection.fullname" . }}
+  labels:
+    {{- include "entra-phishing-detection.labels" . | nindent 4 }}
+spec:
+  selector:
+    matchLabels:
+      {{- include "entra-phishing-detection.selectorLabels" . | nindent 6 }}
+  endpoints:
+  - port: metrics

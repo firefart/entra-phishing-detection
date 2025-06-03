@@ -35,13 +35,10 @@ service:
   # This sets the ports more information can be found here: https://kubernetes.io/docs/concepts/services-networking/service/#field-spec-ports
   port: 8000
   portMetrics: 8001
-  portPprof: 8002
 
 # Use an openshift route to expose the service.
 route:
   enabled: false
-  hostNameMetrics: metrics.service.internal
-  hostNamePprof: pprof.service.internal
   hostName: entra.service.internal
 
 # This block is for setting up the ingress for more information can be found here: https://kubernetes.io/docs/concepts/services-networking/ingress/
@@ -54,38 +51,12 @@ ingress:
     {}
     # kubernetes.io/ingress.class: nginx
     # kubernetes.io/tls-acme: "true"
-  annotationsMetrics:
-    {}
-    # kubernetes.io/ingress.class: nginx
-    # kubernetes.io/tls-acme: "true"
-  annotationsPprof:
-    {}
-    # kubernetes.io/ingress.class: nginx
-    # kubernetes.io/tls-acme: "true"
   hosts:
     - host: chart-example.local
       paths:
         - path: /
           pathType: ImplementationSpecific
-  hostsMetrics:
-    - host: metrics.chart-example.local
-      paths:
-        - path: /
-          pathType: ImplementationSpecific
-  hostsPprof:
-    - host: pprof.chart-example.local
-      paths:
-        - path: /
-          pathType: ImplementationSpecific
   tls: []
-  #  - secretName: chart-example-tls
-  #    hosts:
-  #      - chart-example.local
-  tlsMetrics: []
-  #  - secretName: chart-example-tls
-  #    hosts:
-  #      - chart-example.local
-  tlsPprof: []
   #  - secretName: chart-example-tls
   #    hosts:
   #      - chart-example.local

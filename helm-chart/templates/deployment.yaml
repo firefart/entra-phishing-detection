@@ -19,19 +19,19 @@ spec:
       serviceAccountName: {{ include "entra-phishing-detection.serviceAccountName" . }}
       containers:
         - name: {{ .Chart.Name }}
-          image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
           imagePullPolicy: {{ .Values.image.pullPolicy }}
           command: ["/app/app"]
           args: ["-config", "/config/config.json"]
           ports:
             - name: http
-              containerPort: {{ .Values.service.port }}
+              containerPort: 8000
               protocol: TCP
             - name: metrics
-              containerPort: {{ .Values.service.portMetrics }}
+              containerPort: 8001
               protocol: TCP
             - name: pprof
-              containerPort: {{ .Values.service.portPprof }}
+              containerPort: 8002
               protocol: TCP
           livenessProbe:
             httpGet:
