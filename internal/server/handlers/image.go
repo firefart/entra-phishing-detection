@@ -100,7 +100,7 @@ func (h *ImageHandler) phishingAttempt(w http.ResponseWriter, r *http.Request, r
 	header := make([]any, len(r.Header))
 	i := 0
 	for k, v := range r.Header {
-		header[i] = slog.String(k, strings.Join(v, ", "))
+		header[i] = slog.String(http.CanonicalHeaderKey(k), strings.Join(v, ", "))
 		i++
 	}
 
