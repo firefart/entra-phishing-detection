@@ -56,8 +56,8 @@ func TestAccessLog(t *testing.T) {
 		require.Equal(t, "param=value", logEntry["query"])
 		require.Equal(t, float64(200), logEntry["status_code"]) // nolint:testifylint
 		require.Contains(t, logEntry, "duration")
-		require.Equal(t, float64(7), logEntry["response_body_length"]) // nolint:testifylint
-		require.Equal(t, float64(0), logEntry["request_body_length"])  // nolint:testifylint
+		require.Equal(t, float64(7), logEntry["resp_len"]) // nolint:testifylint
+		require.Equal(t, float64(0), logEntry["req_len"])  // nolint:testifylint
 		// Check request headers group
 		require.Contains(t, logEntry, "headers")
 		headers := logEntry["headers"].(map[string]interface{})

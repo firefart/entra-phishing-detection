@@ -101,8 +101,8 @@ func AccessLog(config AccessLogConfig) func(next http.Handler) http.Handler {
 				slog.String("query", r.URL.RawQuery),
 				slog.String("remote_addr", r.RemoteAddr),
 				slog.String("remote_ip", ip),
-				slog.Int64("request_body_length", r.ContentLength),
-				slog.Int64("response_body_length", wrapped.responseLength),
+				slog.Int64("req_len", r.ContentLength),
+				slog.Int64("resp_len", wrapped.responseLength),
 				slog.Int("status_code", wrapped.statusCode),
 				slog.Duration("duration", duration),
 			).WithGroup("headers").Info("request completed", headerAttrs...)
