@@ -59,8 +59,8 @@ func TestAccessLog(t *testing.T) {
 		require.Equal(t, float64(7), logEntry["response_body_length"]) // nolint:testifylint
 		require.Equal(t, float64(0), logEntry["request_body_length"])  // nolint:testifylint
 		// Check request headers group
-		require.Contains(t, logEntry, "request_headers")
-		headers := logEntry["request_headers"].(map[string]interface{})
+		require.Contains(t, logEntry, "headers")
+		headers := logEntry["headers"].(map[string]interface{})
 		require.Equal(t, "test-agent", headers["User-Agent"])
 		require.Equal(t, "custom-value", headers["X-Custom-Header"])
 		require.Equal(t, "https://example.com", headers["Referer"])
@@ -150,7 +150,7 @@ func TestAccessLog(t *testing.T) {
 		err = json.Unmarshal(logOutput.Bytes(), &logEntry)
 		require.NoError(t, err)
 
-		headers := logEntry["request_headers"].(map[string]interface{})
+		headers := logEntry["headers"].(map[string]interface{})
 		require.Equal(t, "text/html, application/json", headers["Accept"])
 	})
 

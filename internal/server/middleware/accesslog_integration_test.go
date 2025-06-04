@@ -140,8 +140,8 @@ func TestAccessLogMiddlewareIntegration(t *testing.T) {
 		require.Contains(t, requestLog, "duration")
 
 		// Check request headers
-		require.Contains(t, requestLog, "request_headers")
-		headers := requestLog["request_headers"].(map[string]interface{})
+		require.Contains(t, requestLog, "headers")
+		headers := requestLog["headers"].(map[string]interface{})
 		require.Equal(t, "Mozilla/5.0 Integration Test", headers["User-Agent"])
 		require.Equal(t, "https://phishing-site.com", headers["Referer"])
 		require.Equal(t, "192.168.1.100", headers["X-Real-Ip"])
@@ -240,7 +240,7 @@ func TestAccessLogMiddlewareIntegration(t *testing.T) {
 		require.Equal(t, float64(200), requestLog["status_code"]) // nolint:testifylint
 
 		// Check headers
-		headers := requestLog["request_headers"].(map[string]interface{})
+		headers := requestLog["headers"].(map[string]interface{})
 		require.Equal(t, "application/json", headers["Accept"])
 
 		// Verify metrics are collected correctly
@@ -340,7 +340,7 @@ func TestAccessLogMiddlewareIntegration(t *testing.T) {
 		require.Equal(t, float64(200), requestLog["status_code"]) // nolint:testifylint
 
 		// Check that sensitive headers are logged (this is expected behavior)
-		headers := requestLog["request_headers"].(map[string]interface{})
+		headers := requestLog["headers"].(map[string]interface{})
 		require.Equal(t, "test-secret", headers["X-Secret-Key"])
 		require.Equal(t, "Bearer token123", headers["Authorization"])
 

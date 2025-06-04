@@ -105,7 +105,7 @@ func AccessLog(config AccessLogConfig) func(next http.Handler) http.Handler {
 				slog.Int64("response_body_length", wrapped.responseLength),
 				slog.Int("status_code", wrapped.statusCode),
 				slog.Duration("duration", duration),
-			).WithGroup("request_headers").Info("request completed", headerAttrs...)
+			).WithGroup("headers").Info("request completed", headerAttrs...)
 		})
 	}
 }

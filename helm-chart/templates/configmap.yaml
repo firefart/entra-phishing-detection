@@ -70,7 +70,7 @@ data:
         # exclude healthchecks
         - name: grep
           match: applogs
-          exclude: $request_headers['User-Agent'] kube-probe
+          exclude: $headers['User-Agent'] kube-probe
 
         - name: modify
           match: applogs
