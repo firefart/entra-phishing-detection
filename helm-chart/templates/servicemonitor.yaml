@@ -10,3 +10,6 @@ spec:
       {{- include "entra-phishing-detection.selectorLabels" . | nindent 6 }}
   endpoints:
   - port: metrics
+    path: /metrics
+    interval: 30s
+    scheme: http
