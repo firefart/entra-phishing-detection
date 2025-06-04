@@ -74,7 +74,7 @@ data:
 
         - name: modify
           match: applogs
-          add: hostname openshift
+          add: hostname {{ .Values.siem.syslogHostname }}
           add: appname entra-phishing-detection
           add: facility 16
 
