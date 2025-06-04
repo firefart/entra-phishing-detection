@@ -38,6 +38,7 @@ data:
     ---
     service:
       flush: 1
+      daemon: off
       log_level: info
       hot_reload: on
 
@@ -52,20 +53,61 @@ data:
       inputs:
         - name: tail
           path: {{ .Values.pvc.logfilePath }}/log.log
-          parser: json
+          skip_long_lines: on
+          skip_empty_lines: on
+          tag: applogs
 
       filters:
+        # parse and keep the original log in the log key (this will be sent to syslog)
+        # we need the parsed json for additional filters
+        - name: parser
+          match: applogs
+          key_name: log
+          parser: json
+          preserve_key: true
+          reserve_data: true
+
+        # exclude healthchecks
         - name: grep
-          match: '*'
-          exclude: $request_headers['user-agent'] kube-probe
+          match: applogs
+          exclude: $request_headers['User-Agent'] kube-probe
+
+        - name: modify
+          match: applogs
+          add: hostname openshift
+          add: appname entra-phishing-detection
+          add: facility 16
+
+        - name: modify
+          match: applogs
+          condition: Key_value_equals level "INFO"
+          add: severity 6
+
+        - name: modify
+          match: applogs
+          condition: Key_value_equals level "WARN"
+          add: severity 4
+
+        - name: modify
+          match: applogs
+          condition: Key_value_equals level "ERROR"
+          add: severity 3
 
       outputs:
         - name: stdout
-          match: '*'
+          match: applogs
+          format: json
+
+        # send the unparsed raw log to syslog
         - name: syslog
-          match: '*'
+          match: applogs
           host: {{ .Values.siem.host | toYaml }}
           port: {{ .Values.siem.port | toYaml }}
           mode: {{ .Values.siem.mode | toYaml }}
           syslog_format: rfc5424
           syslog_maxsize: 4096
+          syslog_severity_key: severity
+          syslog_facility_key: facility
+          syslog_hostname_key: hostname
+          syslog_appname_key: appname
+          syslog_message_key: log
