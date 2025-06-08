@@ -51,11 +51,12 @@ spec:
             - name: config
               mountPath: /config
               readOnly: true
+        {{- if .Values.fluentBit.enabled }}
         - name: {{ .Chart.Name }}-fluentbit
-          image: {{ .Values.image.fluentbit }}
+          image: "fluent/fluent-bit:{{ .Values.fluentBit.tag }}"
+          imagePullPolicy: {{ .Values.fluentBit.pullPolicy }}
           command: ["/fluent-bit/bin/fluent-bit"]
           args: ["-c", "/config/fluentbit.yml"]
-          imagePullPolicy: Always
           {{- with .Values.resources }}
           resources:
             {{- toYaml . | nindent 12 }}
@@ -65,19 +66,22 @@ spec:
               mountPath: {{ .Values.pvc.logfilePath }}
             - name: fluentbit-config
               mountPath: /config
+        {{- end }}
       volumes:
-        - name: log
-          persistentVolumeClaim:
-            claimName: {{ include "entra-phishing-detection.fullname" . }}
         - name: config
           configMap:
             name: {{ include "entra-phishing-detection.fullname" . }}
             items:
               - key: "config.json"
                 path: "config.json"
+        {{- if .Values.fluentBit.enabled }}
+        - name: log
+          persistentVolumeClaim:
+            claimName: {{ include "entra-phishing-detection.fullname" . }}
         - name: fluentbit-config
           configMap:
             name: {{ include "entra-phishing-detection.fullname" . }}
             items:
               - key: "fluentbit.yml"
                 path: "fluentbit.yml"
+        {{- end }}

@@ -34,6 +34,7 @@ data:
       "timeout": {{ .Values.configFile.timeout | toJson }},
       "allowed_origins": {{ .Values.configFile.allowedOrigins | toJson }}
     }
+  {{- if .Values.fluentBit.enabled }}
   fluentbit.yml: |
     ---
     service:
@@ -111,3 +112,4 @@ data:
           syslog_hostname_key: hostname
           syslog_appname_key: appname
           syslog_message_key: log
+  {{- end }}

@@ -12,7 +12,11 @@ image:
   pullPolicy: Always
   # Overrides the image tag whose default is the chart appVersion.
   tag: "latest"
-  fluentbit: fluent/fluent-bit:4.0.1
+
+fluentBit:
+  enabled: true
+  tag: "4.0.1"
+  pullPolicy: Always
 
 # This is to override the chart name.
 nameOverride: ""
