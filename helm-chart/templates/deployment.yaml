@@ -53,7 +53,7 @@ spec:
               readOnly: true
         {{- if .Values.fluentBit.enabled }}
         - name: {{ .Chart.Name }}-fluentbit
-          image: "fluent/fluent-bit:{{ .Values.fluentBit.tag }}"
+          image: "{{ .Values.fluentBit.image }}:{{ .Values.fluentBit.tag }}"
           imagePullPolicy: {{ .Values.fluentBit.pullPolicy }}
           command: ["/fluent-bit/bin/fluent-bit"]
           args: ["-c", "/config/fluentbit.yml"]

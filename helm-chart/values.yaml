@@ -15,6 +15,7 @@ image:
 
 fluentBit:
   enabled: true
+  image: "fluent/fluent-bit"
   tag: "4.0.1"
   pullPolicy: Always
 
