@@ -35,3 +35,8 @@ updates:
     directory: "/helm-chart/"
     schedule:
       interval: "daily"
+
+  - package-ecosystem: "docker"
+    directory: "/helm-chart/"
+    schedule:
+      interval: "daily"
