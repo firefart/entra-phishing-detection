@@ -17,7 +17,8 @@ func TestParseConfig(t *testing.T) {
 		"ip_header": "IP-Header",
     "path_image": "image_path",
     "path_health": "health_path",
-    "path_version": "version_path"
+    "path_version": "version_path",
+		"path_probe": "probe_path"
   },
   "timeout": "5s"
 }`
@@ -39,6 +40,7 @@ func TestParseConfig(t *testing.T) {
 	require.Equal(t, "image_path", c.Server.PathImage)
 	require.Equal(t, "health_path", c.Server.PathHealth)
 	require.Equal(t, "version_path", c.Server.PathVersion)
+	require.Equal(t, "probe_path", c.Server.PathProbe)
 
 	require.Equal(t, 5*time.Second, c.Timeout)
 }
@@ -145,7 +147,8 @@ func TestGetConfigPathCleaning(t *testing.T) {
 			"secret_key_header_value": "SECRET",
 			"path_image": "/image",
 			"path_health": "//health",
-			"path_version": "///version"
+			"path_version": "///version",
+			"path_probe": "///probe"
 		}
 	}`
 
@@ -162,6 +165,7 @@ func TestGetConfigPathCleaning(t *testing.T) {
 	require.Equal(t, "image", c.Server.PathImage)
 	require.Equal(t, "health", c.Server.PathHealth)
 	require.Equal(t, "version", c.Server.PathVersion)
+	require.Equal(t, "probe", c.Server.PathProbe)
 }
 
 func TestGetConfigWithHostHeaders(t *testing.T) {
@@ -516,4 +520,15 @@ func TestGetConfigLoggingValidation(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestGetConfigEnvironmentVariableProbe(t *testing.T) {
+	// Test that environment variables work for probe path
+	t.Setenv("ENTRA_SERVER_SECRET__KEY__HEADER__NAME", "X-Secret-Key")
+	t.Setenv("ENTRA_SERVER_SECRET__KEY__HEADER__VALUE", "SECRET")
+	t.Setenv("ENTRA_SERVER_PATH__PROBE", "env-probe-path")
+
+	c, err := GetConfig("")
+	require.NoError(t, err)
+	require.Equal(t, "env-probe-path", c.Server.PathProbe)
 }

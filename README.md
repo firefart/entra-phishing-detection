@@ -103,6 +103,7 @@ Ensure you have:
    echo "Image path: $(uuidgen | tr '[:upper:]' '[:lower:]')"
    echo "Health path: $(uuidgen | tr '[:upper:]' '[:lower:]')/health"
    echo "Version path: $(uuidgen | tr '[:upper:]' '[:lower:]')/version"
+   echo "Probe path: $(uuidgen | tr '[:upper:]' '[:lower:]')/healthz"
    ```
 
 3. **Edit `config.json`**:
@@ -114,6 +115,7 @@ Ensure you have:
        "path_image": "your-generated-uuid-here",
        "path_health": "your-generated-uuid-here/health",
        "path_version": "your-generated-uuid-here/version",
+       "path_probe": "your-generated-uuid-here/healthz",
        "ip_header": "CF-Connecting-IP",
        "host_headers": [
           "X-Forwarded-Host",
@@ -207,8 +209,9 @@ Use `--help` to display all available flags and their default values:
 | `server.ip_header`               | `ENTRA_SERVER_IP__HEADER`                 | Custom IP header when running behind a reverse proxy (ensure it's only set by trusted proxies)                                                                                                              |
 | `server.host_headers`            | `ENTRA_SERVER_HOST__HEADERS`              | Array of headers to check for the host value, in order of preference (e.g., `["X-Forwarded-Host", "X-Original-Host"]`). Leave empty when not using a reverse proxy                                          |
 | `server.path_image`              | `ENTRA_SERVER_PATH__IMAGE`                | URL path for the image endpoint (use a random UUID to prevent easy discovery by scanners). Exclude the leading slash                                                                                        |
-| `server.path_health`             | `ENTRA_SERVER_PATH__HEALTH`               | URL path for the health check endpoint (must match the Docker healthcheck configuration)                                                                                                                    |
-| `server.path_version`            | `ENTRA_SERVER_PATH__VERSION`              | URL path for the version information endpoint                                                                                                                                                               |
+| `server.path_health`             | `ENTRA_SERVER_PATH__HEALTH`               | URL path for the public health check endpoint (must match the Docker healthcheck configuration)                                                                                                             |
+| `server.path_version`            | `ENTRA_SERVER_PATH__VERSION`              | URL path for the version information endpoint which is secured with the secret key header                                                                                                                   |
+| `server.path_probe`              | `ENTRA_SERVER_PATH__PROBE`                | URL path for the internal healthcheck endpoint which is secured with the secret key header                                                                                                                  |
 | `logging.access_log`             | `ENTRA_LOGGING_ACCESS__LOG`               | Enable internal access logging (useful when not using a reverse proxy)                                                                                                                                      |
 | `logging.json`                   | `ENTRA_LOGGING_JSON`                      | Output logs in JSON format for easier parsing and integration with log aggregators                                                                                                                          |
 | `logging.log_file`               | `ENTRA_LOGGING_LOG__FILE`                 | Log file path for persistent logging (useful in Kubernetes with logging sidecars)                                                                                                                           |
