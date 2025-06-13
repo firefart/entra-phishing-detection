@@ -96,6 +96,21 @@ func NewServer(opts ...OptionsServerFunc) (http.Handler, error) {
 	s.logger.Info("probe route", slog.String("route", probeRoute))
 	s.logger.Info("version route", slog.String("route", versionRoute))
 
+	// version info secured by secret key header
+	r.Group(func(r *router.Router) {
+		r.Use(middleware.SecretKeyHeader(middleware.SecretKeyHeaderConfig{
+			SecretKeyHeaderName:  s.config.Server.SecretKeyHeaderName,
+			SecretKeyHeaderValue: s.config.Server.SecretKeyHeaderValue,
+			Logger:               s.logger,
+			Debug:                s.debug,
+		}))
+
+		r.HandleFunc(fmt.Sprintf("GET %s", versionRoute), handlers.NewVersionHandler().Handler)
+		// private health check secured by secret key header
+		// duplicate of public health check, but without access log and metrics
+		r.HandleFunc(fmt.Sprintf("GET %s", probeRoute), handlers.NewHealthHandler().Handler)
+	})
+
 	// custom group with addtional access log middleware
 	// everything not in this group will not have access logs
 	r.Group(func(r *router.Router) {
@@ -117,20 +132,6 @@ func NewServer(opts ...OptionsServerFunc) (http.Handler, error) {
 
 		// custom 404 for the rest
 		r.HandleFunc("/", notFound)
-	})
-	// version info secured by secret key header
-	r.Group(func(r *router.Router) {
-		r.Use(middleware.SecretKeyHeader(middleware.SecretKeyHeaderConfig{
-			SecretKeyHeaderName:  s.config.Server.SecretKeyHeaderName,
-			SecretKeyHeaderValue: s.config.Server.SecretKeyHeaderValue,
-			Logger:               s.logger,
-			Debug:                s.debug,
-		}))
-
-		r.HandleFunc(fmt.Sprintf("GET %s", versionRoute), handlers.NewVersionHandler().Handler)
-		// private health check secured by secret key header
-		// duplicate of public health check, but without access log and metrics
-		r.HandleFunc(fmt.Sprintf("GET %s", probeRoute), handlers.NewHealthHandler().Handler)
 	})
 
 	return r, nil
