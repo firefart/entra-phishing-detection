@@ -18,7 +18,7 @@ func TestParseConfig(t *testing.T) {
     "path_image": "image_path",
     "path_health": "health_path",
     "path_version": "version_path",
-		"path_probe": "probe_path"
+    "path_probe": "probe_path"
   },
   "timeout": "5s"
 }`
