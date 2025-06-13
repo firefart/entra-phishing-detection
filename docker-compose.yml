@@ -10,7 +10,7 @@ services:
       ENTRA_SERVER_LISTEN__METRICS: ":8001"
       ENTRA_LOGGING_JSON: "true"
     healthcheck:
-      test: curl -f -sS ${HEALTHCHECK:-http://localhost:8000/health} || exit 1
+      test: curl -f -H "${SECRET_KEY_HEADER_NAME}:${SECRET_KEY_HEADER_VALUE}" -sS ${HEALTHCHECK:-http://localhost:8000/healthz} || exit 1
       interval: 5s
       timeout: 10s
       start_period: 5s

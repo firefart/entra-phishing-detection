@@ -233,13 +233,17 @@ Create a `.env` file in your project directory with the following variables:
 WEB_LISTEN=127.0.0.1:8000
 METRICS_LISTEN=127.0.0.1:8001
 HEALTHCHECK=http://localhost:8000/health_path
+SECRET_KEY_HEADER_NAME=X-Secret-Key
+SECRET_KEY_HEADER_VALUE=your-secret-key-here
 ```
 
-| Variable         | Description                                                                                                                                                      |
-| ---------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `WEB_LISTEN`     | Listening address for the main web server where Caddy (or your reverse proxy) should connect. If you specify only a port, it will be available on all interfaces |
-| `METRICS_LISTEN` | Listening address for the Prometheus metrics endpoint. Configure IP ACLs or authentication to prevent public exposure                                            |
-| `HEALTHCHECK`    | Full URL for Docker health checks, must match the `server.path_health` property from `config.json`                                                               |
+| Variable                  | Description                                                                                                                                                      |
+| ------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `WEB_LISTEN`              | Listening address for the main web server where Caddy (or your reverse proxy) should connect. If you specify only a port, it will be available on all interfaces |
+| `METRICS_LISTEN`          | Listening address for the Prometheus metrics endpoint. Configure IP ACLs or authentication to prevent public exposure                                            |
+| `HEALTHCHECK`             | Full URL for Docker health checks, must match the `server.path_probe` property from `config.json`                                                               |
+| `SECRET_KEY_HEADER_NAME`  | |
+| `SECRET_KEY_HEADER_VALUE` | |
 
 ### Example Configuration
 
@@ -257,7 +261,8 @@ Here's a complete example configuration for a production deployment:
     "host_headers": ["X-Forwarded-Host", "X-Original-Host"],
     "path_image": "a1b2c3d4-e5f6-7890-1234-567890abcdef",
     "path_health": "f1e2d3c4-b5a6-9870-5432-109876fedcba/health",
-    "path_version": "9876543a-bcde-f012-3456-789abcdef012/version"
+    "path_version": "9876543a-bcde-f012-3456-789abcdef012/version",
+    "path_probe": "3bc614d2-cae1-4d00-9f3a-65bd85b9a6d6/healthz"
   },
   "logging": {
     "access_log": false,

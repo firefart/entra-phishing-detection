@@ -50,13 +50,6 @@ func NewServer(opts ...OptionsServerFunc) (http.Handler, error) {
 		}
 	}
 
-	secretKeyHeaderMW := middleware.SecretKeyHeaderConfig{
-		SecretKeyHeaderName:  s.config.Server.SecretKeyHeaderName,
-		SecretKeyHeaderValue: s.config.Server.SecretKeyHeaderValue,
-		Logger:               s.logger,
-		Debug:                s.debug,
-	}
-
 	r := router.New()
 
 	r.SetErrorHandler(func(w http.ResponseWriter, r *http.Request, err error) {
@@ -127,7 +120,13 @@ func NewServer(opts ...OptionsServerFunc) (http.Handler, error) {
 	})
 	// version info secured by secret key header
 	r.Group(func(r *router.Router) {
-		r.Use(middleware.SecretKeyHeader(secretKeyHeaderMW))
+		r.Use(middleware.SecretKeyHeader(middleware.SecretKeyHeaderConfig{
+			SecretKeyHeaderName:  s.config.Server.SecretKeyHeaderName,
+			SecretKeyHeaderValue: s.config.Server.SecretKeyHeaderValue,
+			Logger:               s.logger,
+			Debug:                s.debug,
+		}))
+
 		r.HandleFunc(fmt.Sprintf("GET %s", versionRoute), handlers.NewVersionHandler().Handler)
 		// private health check secured by secret key header
 		// duplicate of public health check, but without access log and metrics
