@@ -90,7 +90,8 @@ func NewServer(opts ...OptionsServerFunc) (http.Handler, error) {
 	s.logger.Info("health route", slog.String("route", healthRoute))
 	s.logger.Info("version route", slog.String("route", versionRoute))
 
-	// version info secured by secret key header
+	// version info and health checks secured by secret key header
+	// not that those routes will not be logged by the access log middleware
 	r.Group(func(r *router.Router) {
 		r.Use(middleware.SecretKeyHeader(middleware.SecretKeyHeaderConfig{
 			SecretKeyHeaderName:  s.config.Server.SecretKeyHeaderName,
@@ -98,6 +99,9 @@ func NewServer(opts ...OptionsServerFunc) (http.Handler, error) {
 			Logger:               s.logger,
 			Debug:                s.debug,
 		}))
+
+		// health check for monitoring
+		r.HandleFunc(fmt.Sprintf("GET %s", healthRoute), handlers.NewHealthHandler().Handler)
 
 		r.HandleFunc(fmt.Sprintf("GET %s", versionRoute), handlers.NewVersionHandler().Handler)
 	})
@@ -118,8 +122,6 @@ func NewServer(opts ...OptionsServerFunc) (http.Handler, error) {
 			ImagesOK:       s.imagesOK,
 			ImagesPhishing: s.imagesPhishing,
 		}).Handler)
-		// public health check for monitoring
-		r.HandleFunc(fmt.Sprintf("GET %s", healthRoute), handlers.NewHealthHandler().Handler)
 
 		// custom 404 for the rest
 		r.HandleFunc("/", notFound)
