@@ -203,13 +203,12 @@ func TestAccessLogMiddlewareIntegration(t *testing.T) {
 		require.Positive(t, requestSizeMetric.GetHistogram().GetSampleCount())
 	})
 
-	t.Run("does not log private version endpoint with auth", func(t *testing.T) {
+	t.Run("does not log private version endpoint", func(t *testing.T) {
 		// Clear previous log output
 		logOutput.Reset()
 
 		req := httptest.NewRequest(http.MethodGet, "/test-version", nil)
 		req.Header.Set("X-Secret-Key", "test-secret")
-		req.Header.Set("Authorization", "Bearer token123")
 
 		w := httptest.NewRecorder()
 		handler.ServeHTTP(w, req)
@@ -238,13 +237,12 @@ func TestAccessLogMiddlewareIntegration(t *testing.T) {
 		require.Nil(t, requestLog)
 	})
 
-	t.Run("does not log private health endpoint with auth", func(t *testing.T) {
+	t.Run("does not log private health endpoint", func(t *testing.T) {
 		// Clear previous log output
 		logOutput.Reset()
 
 		req := httptest.NewRequest(http.MethodGet, "/test-health", nil)
 		req.Header.Set("X-Secret-Key", "test-secret")
-		req.Header.Set("Authorization", "Bearer token123")
 
 		w := httptest.NewRecorder()
 		handler.ServeHTTP(w, req)
