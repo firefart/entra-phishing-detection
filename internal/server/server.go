@@ -50,13 +50,6 @@ func NewServer(opts ...OptionsServerFunc) (http.Handler, error) {
 		}
 	}
 
-	secretKeyHeaderMW := middleware.SecretKeyHeaderConfig{
-		SecretKeyHeaderName:  s.config.Server.SecretKeyHeaderName,
-		SecretKeyHeaderValue: s.config.Server.SecretKeyHeaderValue,
-		Logger:               s.logger,
-		Debug:                s.debug,
-	}
-
 	r := router.New()
 
 	r.SetErrorHandler(func(w http.ResponseWriter, r *http.Request, err error) {
@@ -77,21 +70,20 @@ func NewServer(opts ...OptionsServerFunc) (http.Handler, error) {
 	r.Use(middleware.RealHost(middleware.RealHostConfig{
 		Headers: s.config.Server.HostHeaders,
 	}))
-	if s.accessLog {
-		r.Use(middleware.AccessLog(middleware.AccessLogConfig{
-			Logger:  s.logger,
-			Metrics: s.metrics,
-		}))
-	}
 
 	imageRoute := "/image"
 	if s.config.Server.PathImage != "" {
 		imageRoute = fmt.Sprintf("/%s", s.config.Server.PathImage)
 	}
 
-	healthRoute := "/health"
+	publicHealthRoute := "/health"
 	if s.config.Server.PathHealth != "" {
-		healthRoute = fmt.Sprintf("/%s", s.config.Server.PathHealth)
+		publicHealthRoute = fmt.Sprintf("/%s", s.config.Server.PathHealth)
+	}
+
+	probeRoute := "/healthz"
+	if s.config.Server.PathProbe != "" {
+		probeRoute = fmt.Sprintf("/%s", s.config.Server.PathProbe)
 	}
 
 	versionRoute := "/version"
@@ -100,27 +92,48 @@ func NewServer(opts ...OptionsServerFunc) (http.Handler, error) {
 	}
 
 	s.logger.Info("image route", slog.String("route", imageRoute))
-	s.logger.Info("health route", slog.String("route", healthRoute))
+	s.logger.Info("public health route", slog.String("route", publicHealthRoute))
+	s.logger.Info("probe route", slog.String("route", probeRoute))
 	s.logger.Info("version route", slog.String("route", versionRoute))
 
-	// image generation route
-	r.HandleFunc(fmt.Sprintf("GET %s", imageRoute), handlers.NewImageHandler(handlers.ImageHandlerOptions{
-		AllowedOrigins: s.config.AllowedOrigins,
-		Logger:         s.logger,
-		Metrics:        s.metrics,
-		ImagesOK:       s.imagesOK,
-		ImagesPhishing: s.imagesPhishing,
-	}).Handler)
-	// health check for monitoring
-	r.HandleFunc(fmt.Sprintf("GET %s", healthRoute), handlers.NewHealthHandler().Handler)
+	// private health check route for docker/k8s probes
+	// duplicate of public health check, but without access log and metrics
+	r.HandleFunc(fmt.Sprintf("GET %s", probeRoute), handlers.NewHealthHandler().Handler)
+
 	// version info secured by secret key header
 	r.Group(func(r *router.Router) {
-		r.Use(middleware.SecretKeyHeader(secretKeyHeaderMW))
+		r.Use(middleware.SecretKeyHeader(middleware.SecretKeyHeaderConfig{
+			SecretKeyHeaderName:  s.config.Server.SecretKeyHeaderName,
+			SecretKeyHeaderValue: s.config.Server.SecretKeyHeaderValue,
+			Logger:               s.logger,
+			Debug:                s.debug,
+		}))
+
 		r.HandleFunc(fmt.Sprintf("GET %s", versionRoute), handlers.NewVersionHandler().Handler)
 	})
 
-	// custom 404 for the rest
-	r.HandleFunc("/", notFound)
+	// custom group with addtional access log middleware
+	// everything not in this group will not have access logs
+	r.Group(func(r *router.Router) {
+		if s.accessLog {
+			r.Use(middleware.AccessLog(middleware.AccessLogConfig{
+				Logger:  s.logger,
+				Metrics: s.metrics,
+			}))
+		}
+		r.HandleFunc(fmt.Sprintf("GET %s", imageRoute), handlers.NewImageHandler(handlers.ImageHandlerOptions{
+			AllowedOrigins: s.config.AllowedOrigins,
+			Logger:         s.logger,
+			Metrics:        s.metrics,
+			ImagesOK:       s.imagesOK,
+			ImagesPhishing: s.imagesPhishing,
+		}).Handler)
+		// public health check for monitoring
+		r.HandleFunc(fmt.Sprintf("GET %s", publicHealthRoute), handlers.NewHealthHandler().Handler)
+
+		// custom 404 for the rest
+		r.HandleFunc("/", notFound)
+	})
 
 	return r, nil
 }

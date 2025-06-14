@@ -40,6 +40,7 @@ type Server struct {
 	HostHeaders          []string      `koanf:"host_headers"`
 	PathImage            string        `koanf:"path_image"`
 	PathHealth           string        `koanf:"path_health"`
+	PathProbe            string        `koanf:"path_probe"`
 	PathVersion          string        `koanf:"path_version"`
 }
 
@@ -126,6 +127,7 @@ func GetConfig(f string) (Configuration, error) {
 	// remove leading slashes from paths
 	config.Server.PathImage = strings.TrimLeft(config.Server.PathImage, "/")
 	config.Server.PathHealth = strings.TrimLeft(config.Server.PathHealth, "/")
+	config.Server.PathProbe = strings.TrimLeft(config.Server.PathProbe, "/")
 	config.Server.PathVersion = strings.TrimLeft(config.Server.PathVersion, "/")
 
 	if len(config.Images.OK) > 0 {

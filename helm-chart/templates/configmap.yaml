@@ -68,11 +68,6 @@ data:
           preserve_key: true
           reserve_data: true
 
-        # exclude healthchecks
-        - name: grep
-          match: applogs
-          exclude: $headers['User-Agent'] kube-probe
-
         - name: modify
           match: applogs
           add: hostname {{ .Values.siem.syslogHostname }}

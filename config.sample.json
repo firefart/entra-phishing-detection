@@ -14,7 +14,8 @@
     ],
     "path_image": "30ce6ec8-1ca0-4dee-a4b0-b56fd4adf731",
     "path_health": "10282d45-484d-4e18-8d55-40d38e82c39b/health",
-    "path_version": "d7cf1d1d-d4ba-49a0-8ff7-565c685c047a/version"
+    "path_version": "d7cf1d1d-d4ba-49a0-8ff7-565c685c047a/version",
+    "path_probe": "d33d719d-c737-4c4c-855d-65fc6e07f831/healthz"
   },
   "logging": {
     "access_log": false,
