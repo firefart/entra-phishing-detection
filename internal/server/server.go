@@ -91,7 +91,7 @@ func NewServer(opts ...OptionsServerFunc) (http.Handler, error) {
 	s.logger.Info("version route", slog.String("route", versionRoute))
 
 	// version info and health checks secured by secret key header
-	// not that those routes will not be logged by the access log middleware
+	// note that those routes will not be logged by the access log middleware
 	r.Group(func(r *router.Router) {
 		r.Use(middleware.SecretKeyHeader(middleware.SecretKeyHeaderConfig{
 			SecretKeyHeaderName:  s.config.Server.SecretKeyHeaderName,
