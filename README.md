@@ -233,8 +233,6 @@ Create a `.env` file in your project directory with the following variables:
 WEB_LISTEN=127.0.0.1:8000
 METRICS_LISTEN=127.0.0.1:8001
 HEALTHCHECK=http://localhost:8000/health_path
-SECRET_KEY_HEADER_NAME=X-Secret-Key
-SECRET_KEY_HEADER_VALUE=your-secret-key-here
 ```
 
 | Variable                  | Description                                                                                                                                                      |
@@ -242,8 +240,6 @@ SECRET_KEY_HEADER_VALUE=your-secret-key-here
 | `WEB_LISTEN`              | Listening address for the main web server where Caddy (or your reverse proxy) should connect. If you specify only a port, it will be available on all interfaces |
 | `METRICS_LISTEN`          | Listening address for the Prometheus metrics endpoint. Configure IP ACLs or authentication to prevent public exposure                                            |
 | `HEALTHCHECK`             | Full URL for Docker health checks, must match the `server.path_probe` property from `config.json`                                                               |
-| `SECRET_KEY_HEADER_NAME`  | |
-| `SECRET_KEY_HEADER_VALUE` | |
 
 ### Example Configuration
 

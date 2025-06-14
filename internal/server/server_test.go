@@ -610,32 +610,13 @@ func TestProbeEndpointSecurity(t *testing.T) {
 	)
 	require.NoError(t, err)
 
-	t.Run("probe endpoint requires secret key", func(t *testing.T) {
-		// Test without secret key - should return 200 with empty body (hiding endpoint existence)
-		req := httptest.NewRequest(http.MethodGet, "/custom-probe-path", nil)
-		w := httptest.NewRecorder()
-		handler.ServeHTTP(w, req)
-		require.Equal(t, http.StatusOK, w.Code)
-		require.Empty(t, w.Body.String())
-	})
-
-	t.Run("probe endpoint with wrong secret key", func(t *testing.T) {
-		// Test with wrong secret key - should return 200 with empty body (hiding endpoint existence)
-		req := httptest.NewRequest(http.MethodGet, "/custom-probe-path", nil)
-		req.Header.Set("X-Secret-Key", "wrong-key")
-		w := httptest.NewRecorder()
-		handler.ServeHTTP(w, req)
-		require.Equal(t, http.StatusOK, w.Code)
-		require.Empty(t, w.Body.String())
-	})
-
-	t.Run("probe endpoint with correct secret key", func(t *testing.T) {
+	t.Run("probe endpoint", func(t *testing.T) {
 		// Test with correct secret key - should succeed
 		req := httptest.NewRequest(http.MethodGet, "/custom-probe-path", nil)
-		req.Header.Set("X-Secret-Key", "secret-key-123")
 		w := httptest.NewRecorder()
 		handler.ServeHTTP(w, req)
 		require.Equal(t, http.StatusOK, w.Code)
+		require.Equal(t, "OK", w.Body.String())
 	})
 
 	t.Run("default probe path with authentication", func(t *testing.T) {
@@ -659,17 +640,10 @@ func TestProbeEndpointSecurity(t *testing.T) {
 
 		// Test default probe path with correct secret key
 		req := httptest.NewRequest(http.MethodGet, "/healthz", nil)
-		req.Header.Set("X-Secret-Key", "secret-default")
 		w := httptest.NewRecorder()
 		handlerDefault.ServeHTTP(w, req)
 		require.Equal(t, http.StatusOK, w.Code)
-
-		// Test default probe path without secret key - should return 200 with empty body
-		req = httptest.NewRequest(http.MethodGet, "/healthz", nil)
-		w = httptest.NewRecorder()
-		handlerDefault.ServeHTTP(w, req)
-		require.Equal(t, http.StatusOK, w.Code)
-		require.Empty(t, w.Body.String())
+		require.Equal(t, "OK", w.Body.String())
 	})
 }
 
@@ -701,22 +675,16 @@ func TestProbeVsPublicHealthEndpoints(t *testing.T) {
 		w := httptest.NewRecorder()
 		handler.ServeHTTP(w, req)
 		require.Equal(t, http.StatusOK, w.Code)
+		require.Equal(t, "OK", w.Body.String())
 	})
 
-	t.Run("private probe endpoint requires auth", func(t *testing.T) {
+	t.Run("private probe endpoint accessible witout auth", func(t *testing.T) {
 		// Without auth - should return 200 with empty body (hiding endpoint existence)
 		req := httptest.NewRequest(http.MethodGet, "/private-probe", nil)
 		w := httptest.NewRecorder()
 		handler.ServeHTTP(w, req)
 		require.Equal(t, http.StatusOK, w.Code)
-		require.Empty(t, w.Body.String())
-
-		// With auth - should succeed
-		req = httptest.NewRequest(http.MethodGet, "/private-probe", nil)
-		req.Header.Set("X-Secret-Key", "secret-key")
-		w = httptest.NewRecorder()
-		handler.ServeHTTP(w, req)
-		require.Equal(t, http.StatusOK, w.Code)
+		require.Equal(t, "OK", w.Body.String())
 	})
 
 	t.Run("both endpoints return same health status", func(t *testing.T) {
@@ -766,21 +734,14 @@ func TestDualHealthEndpoints(t *testing.T) {
 		w := httptest.NewRecorder()
 		handler.ServeHTTP(w, req)
 		require.Equal(t, http.StatusOK, w.Code)
+		require.Equal(t, "OK", w.Body.String())
 
 		// Test private endpoint - should require auth
 		req = httptest.NewRequest(http.MethodGet, "/private-health-check", nil)
 		w = httptest.NewRecorder()
 		handler.ServeHTTP(w, req)
 		require.Equal(t, http.StatusOK, w.Code)
-		require.Empty(t, w.Body.String()) // Should be empty without auth
-
-		// Test private endpoint with auth - should work
-		req = httptest.NewRequest(http.MethodGet, "/private-health-check", nil)
-		req.Header.Set("X-Secret-Key", "secret-key")
-		w = httptest.NewRecorder()
-		handler.ServeHTTP(w, req)
-		require.Equal(t, http.StatusOK, w.Code)
-		require.NotEmpty(t, w.Body.String()) // Should have content with auth
+		require.Equal(t, "OK", w.Body.String())
 	})
 
 	t.Run("endpoints can have same path prefix", func(t *testing.T) {

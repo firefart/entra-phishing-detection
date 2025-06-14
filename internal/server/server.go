@@ -96,6 +96,10 @@ func NewServer(opts ...OptionsServerFunc) (http.Handler, error) {
 	s.logger.Info("probe route", slog.String("route", probeRoute))
 	s.logger.Info("version route", slog.String("route", versionRoute))
 
+	// private health check route for docker/k8s probes
+	// duplicate of public health check, but without access log and metrics
+	r.HandleFunc(fmt.Sprintf("GET %s", probeRoute), handlers.NewHealthHandler().Handler)
+
 	// version info secured by secret key header
 	r.Group(func(r *router.Router) {
 		r.Use(middleware.SecretKeyHeader(middleware.SecretKeyHeaderConfig{
@@ -106,9 +110,6 @@ func NewServer(opts ...OptionsServerFunc) (http.Handler, error) {
 		}))
 
 		r.HandleFunc(fmt.Sprintf("GET %s", versionRoute), handlers.NewVersionHandler().Handler)
-		// private health check secured by secret key header
-		// duplicate of public health check, but without access log and metrics
-		r.HandleFunc(fmt.Sprintf("GET %s", probeRoute), handlers.NewHealthHandler().Handler)
 	})
 
 	// custom group with addtional access log middleware

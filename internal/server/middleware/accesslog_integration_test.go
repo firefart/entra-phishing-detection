@@ -774,13 +774,6 @@ func TestAccessLogBehaviorWithRouteGroups(t *testing.T) {
 		require.Equal(t, http.StatusOK, w.Code) // Secret key middleware returns 200 with empty body
 		require.Empty(t, w.Body.String())       // Should be empty body
 
-		// Try to access private probe endpoint without auth
-		req = httptest.NewRequest(http.MethodGet, "/test-probe", nil)
-		w = httptest.NewRecorder()
-		handler.ServeHTTP(w, req)
-		require.Equal(t, http.StatusOK, w.Code) // Secret key middleware returns 200 with empty body
-		require.Empty(t, w.Body.String())       // Should be empty body
-
 		// Parse log output - should not have access log entries
 		logLines := bytes.Split(logOutput.Bytes(), []byte("\n"))
 		requestLogCount := 0
