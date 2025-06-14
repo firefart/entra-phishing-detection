@@ -232,11 +232,13 @@ METRICS_LISTEN=127.0.0.1:8001
 HEALTHCHECK=http://localhost:8000/health_path
 ```
 
-| Variable         | Description                                                                                                                                                      |
-| ---------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `WEB_LISTEN`     | Listening address for the main web server where Caddy (or your reverse proxy) should connect. If you specify only a port, it will be available on all interfaces |
-| `METRICS_LISTEN` | Listening address for the Prometheus metrics endpoint. Configure IP ACLs or authentication to prevent public exposure                                            |
-| `HEALTHCHECK`    | Full URL for Docker health checks, must match the `server.path_health` property from `config.json`                                                               |
+| Variable                  | Description                                                                                                                                                      |
+| ------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `WEB_LISTEN`              | Listening address for the main web server where Caddy (or your reverse proxy) should connect. If you specify only a port, it will be available on all interfaces |
+| `METRICS_LISTEN`          | Listening address for the Prometheus metrics endpoint. Configure IP ACLs or authentication to prevent public exposure                                            |
+| `HEALTHCHECK`             | Full URL for Docker health checks, must match the `server.path_health` property from `config.json`                                                               |
+| `SECRET_KEY_HEADER_NAME`  | Secret Key Header name used for healthchecks, must match the `server.secret_key_header_name` property from `config.json`                                         |
+| `SECRET_KEY_HEADER_VALUE` | Secret Key Header value used for healthchecks, must match the `server.secret_key_header_value` property from `config.json`                                       |
 
 ### Example Configuration
 
