@@ -203,7 +203,7 @@ func TestAccessLogMiddlewareIntegration(t *testing.T) {
 		require.Positive(t, requestSizeMetric.GetHistogram().GetSampleCount())
 	})
 
-	t.Run("logs public health endpoint request", func(t *testing.T) {
+	t.Run("logs health endpoint request", func(t *testing.T) {
 		// Clear previous log output
 		logOutput.Reset()
 

@@ -22,6 +22,6 @@ WORKDIR /app
 
 COPY --from=build-env /src/app .
 
-HEALTHCHECK --interval=5s --timeout=10s --start-period=5s --retries=3 CMD curl -f -sS http://localhost:8000/healthz || exit 1
+HEALTHCHECK --interval=5s --timeout=10s --start-period=5s --retries=3 CMD curl -f -sS http://localhost:8000/health || exit 1
 
 ENTRYPOINT [ "./app" ]
