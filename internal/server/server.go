@@ -76,14 +76,9 @@ func NewServer(opts ...OptionsServerFunc) (http.Handler, error) {
 		imageRoute = fmt.Sprintf("/%s", s.config.Server.PathImage)
 	}
 
-	publicHealthRoute := "/health"
+	healthRoute := "/health"
 	if s.config.Server.PathHealth != "" {
-		publicHealthRoute = fmt.Sprintf("/%s", s.config.Server.PathHealth)
-	}
-
-	probeRoute := "/healthz"
-	if s.config.Server.PathProbe != "" {
-		probeRoute = fmt.Sprintf("/%s", s.config.Server.PathProbe)
+		healthRoute = fmt.Sprintf("/%s", s.config.Server.PathHealth)
 	}
 
 	versionRoute := "/version"
@@ -92,13 +87,8 @@ func NewServer(opts ...OptionsServerFunc) (http.Handler, error) {
 	}
 
 	s.logger.Info("image route", slog.String("route", imageRoute))
-	s.logger.Info("public health route", slog.String("route", publicHealthRoute))
-	s.logger.Info("probe route", slog.String("route", probeRoute))
+	s.logger.Info("health route", slog.String("route", healthRoute))
 	s.logger.Info("version route", slog.String("route", versionRoute))
-
-	// private health check route for docker/k8s probes
-	// duplicate of public health check, but without access log and metrics
-	r.HandleFunc(fmt.Sprintf("GET %s", probeRoute), handlers.NewHealthHandler().Handler)
 
 	// version info secured by secret key header
 	r.Group(func(r *router.Router) {
@@ -129,7 +119,7 @@ func NewServer(opts ...OptionsServerFunc) (http.Handler, error) {
 			ImagesPhishing: s.imagesPhishing,
 		}).Handler)
 		// public health check for monitoring
-		r.HandleFunc(fmt.Sprintf("GET %s", publicHealthRoute), handlers.NewHealthHandler().Handler)
+		r.HandleFunc(fmt.Sprintf("GET %s", healthRoute), handlers.NewHealthHandler().Handler)
 
 		// custom 404 for the rest
 		r.HandleFunc("/", notFound)

@@ -93,7 +93,6 @@ func TestNewServer(t *testing.T) {
 			PathImage:            "image",
 			PathHealth:           "health",
 			PathVersion:          "version",
-			PathProbe:            "probe",
 		},
 	}
 	reg := prometheus.NewRegistry()
@@ -153,13 +152,6 @@ func TestNewServerDefaultPaths(t *testing.T) {
 	w = httptest.NewRecorder()
 	handler.ServeHTTP(w, req)
 	require.Equal(t, http.StatusOK, w.Code)
-
-	// Test default probe path (should require secret key)
-	req = httptest.NewRequest(http.MethodGet, "/healthz", nil)
-	req.Header.Set("X-Secret-Key", "secret")
-	w = httptest.NewRecorder()
-	handler.ServeHTTP(w, req)
-	require.Equal(t, http.StatusOK, w.Code)
 }
 
 func TestNewServerCustomPaths(t *testing.T) {
@@ -173,7 +165,6 @@ func TestNewServerCustomPaths(t *testing.T) {
 			PathImage:            "custom-image",
 			PathHealth:           "custom-health",
 			PathVersion:          "custom-version",
-			PathProbe:            "custom-probe",
 		},
 	}
 	reg := prometheus.NewRegistry()
@@ -203,13 +194,6 @@ func TestNewServerCustomPaths(t *testing.T) {
 
 	// Test custom version path (should require secret key)
 	req = httptest.NewRequest(http.MethodGet, "/custom-version", nil)
-	req.Header.Set("X-Secret-Key", "secret")
-	w = httptest.NewRecorder()
-	handler.ServeHTTP(w, req)
-	require.Equal(t, http.StatusOK, w.Code)
-
-	// Test custom probe path (should require secret key)
-	req = httptest.NewRequest(http.MethodGet, "/custom-probe", nil)
 	req.Header.Set("X-Secret-Key", "secret")
 	w = httptest.NewRecorder()
 	handler.ServeHTTP(w, req)
@@ -464,7 +448,6 @@ func TestNewServerWithCustomImages(t *testing.T) {
 				PathImage:            "image",
 				PathHealth:           "health",
 				PathVersion:          "version",
-				PathProbe:            "probe",
 			},
 			Images: config.Images{}, // Empty images config
 		}
@@ -586,234 +569,4 @@ func TestCustomImagesCompletelyOverrideDefaults(t *testing.T) {
 	// Verify the maps have been completely replaced (not just individual entries)
 	require.Len(t, s.imagesOK, 2)
 	require.Len(t, s.imagesPhishing, 2)
-}
-
-func TestProbeEndpointSecurity(t *testing.T) {
-	logger := slog.New(slog.DiscardHandler)
-	cfg := config.Configuration{
-		AllowedOrigins: []string{"example.com"},
-		Server: config.Server{
-			SecretKeyHeaderName:  "X-Secret-Key",
-			SecretKeyHeaderValue: "secret-key-123",
-			IPHeader:             "X-Real-IP",
-			PathProbe:            "custom-probe-path",
-		},
-	}
-	reg := prometheus.NewRegistry()
-	m, err := metrics.NewMetrics(reg)
-	require.NoError(t, err)
-
-	handler, err := NewServer(
-		WithLogger(logger),
-		WithConfig(cfg),
-		WithMetrics(m),
-	)
-	require.NoError(t, err)
-
-	t.Run("probe endpoint", func(t *testing.T) {
-		// Test with correct secret key - should succeed
-		req := httptest.NewRequest(http.MethodGet, "/custom-probe-path", nil)
-		w := httptest.NewRecorder()
-		handler.ServeHTTP(w, req)
-		require.Equal(t, http.StatusOK, w.Code)
-		require.Equal(t, "OK", w.Body.String())
-	})
-
-	t.Run("default probe path with authentication", func(t *testing.T) {
-		// Create server with empty probe path to test default
-		cfgDefault := config.Configuration{
-			AllowedOrigins: []string{"example.com"},
-			Server: config.Server{
-				SecretKeyHeaderName:  "X-Secret-Key",
-				SecretKeyHeaderValue: "secret-default",
-				IPHeader:             "X-Real-IP",
-				// PathProbe is empty - should use default "/healthz"
-			},
-		}
-
-		handlerDefault, err := NewServer(
-			WithLogger(logger),
-			WithConfig(cfgDefault),
-			WithMetrics(m),
-		)
-		require.NoError(t, err)
-
-		// Test default probe path with correct secret key
-		req := httptest.NewRequest(http.MethodGet, "/healthz", nil)
-		w := httptest.NewRecorder()
-		handlerDefault.ServeHTTP(w, req)
-		require.Equal(t, http.StatusOK, w.Code)
-		require.Equal(t, "OK", w.Body.String())
-	})
-}
-
-func TestProbeVsPublicHealthEndpoints(t *testing.T) {
-	logger := slog.New(slog.DiscardHandler)
-	cfg := config.Configuration{
-		AllowedOrigins: []string{"example.com"},
-		Server: config.Server{
-			SecretKeyHeaderName:  "X-Secret-Key",
-			SecretKeyHeaderValue: "secret-key",
-			IPHeader:             "X-Real-IP",
-			PathHealth:           "public-health",
-			PathProbe:            "private-probe",
-		},
-	}
-	reg := prometheus.NewRegistry()
-	m, err := metrics.NewMetrics(reg)
-	require.NoError(t, err)
-
-	handler, err := NewServer(
-		WithLogger(logger),
-		WithConfig(cfg),
-		WithMetrics(m),
-	)
-	require.NoError(t, err)
-
-	t.Run("public health endpoint accessible without auth", func(t *testing.T) {
-		req := httptest.NewRequest(http.MethodGet, "/public-health", nil)
-		w := httptest.NewRecorder()
-		handler.ServeHTTP(w, req)
-		require.Equal(t, http.StatusOK, w.Code)
-		require.Equal(t, "OK", w.Body.String())
-	})
-
-	t.Run("private probe endpoint accessible witout auth", func(t *testing.T) {
-		// Without auth - should return 200 with empty body (hiding endpoint existence)
-		req := httptest.NewRequest(http.MethodGet, "/private-probe", nil)
-		w := httptest.NewRecorder()
-		handler.ServeHTTP(w, req)
-		require.Equal(t, http.StatusOK, w.Code)
-		require.Equal(t, "OK", w.Body.String())
-	})
-
-	t.Run("both endpoints return same health status", func(t *testing.T) {
-		// Get public health response
-		req := httptest.NewRequest(http.MethodGet, "/public-health", nil)
-		w1 := httptest.NewRecorder()
-		handler.ServeHTTP(w1, req)
-
-		// Get private probe response
-		req = httptest.NewRequest(http.MethodGet, "/private-probe", nil)
-		req.Header.Set("X-Secret-Key", "secret-key")
-		w2 := httptest.NewRecorder()
-		handler.ServeHTTP(w2, req)
-
-		// Both should have same status and response
-		require.Equal(t, w1.Code, w2.Code)
-		require.Equal(t, w1.Body.String(), w2.Body.String())
-	})
-}
-
-func TestDualHealthEndpoints(t *testing.T) {
-	logger := slog.New(slog.DiscardHandler)
-	cfg := config.Configuration{
-		AllowedOrigins: []string{"example.com"},
-		Server: config.Server{
-			SecretKeyHeaderName:  "X-Secret-Key",
-			SecretKeyHeaderValue: "secret-key",
-			IPHeader:             "X-Real-IP",
-			PathHealth:           "public-health-check",
-			PathProbe:            "private-health-check",
-		},
-	}
-	reg := prometheus.NewRegistry()
-	m, err := metrics.NewMetrics(reg)
-	require.NoError(t, err)
-
-	handler, err := NewServer(
-		WithLogger(logger),
-		WithConfig(cfg),
-		WithMetrics(m),
-	)
-	require.NoError(t, err)
-
-	t.Run("public and private endpoints are independent", func(t *testing.T) {
-		// Test public endpoint - should work without auth
-		req := httptest.NewRequest(http.MethodGet, "/public-health-check", nil)
-		w := httptest.NewRecorder()
-		handler.ServeHTTP(w, req)
-		require.Equal(t, http.StatusOK, w.Code)
-		require.Equal(t, "OK", w.Body.String())
-
-		// Test private endpoint - should require auth
-		req = httptest.NewRequest(http.MethodGet, "/private-health-check", nil)
-		w = httptest.NewRecorder()
-		handler.ServeHTTP(w, req)
-		require.Equal(t, http.StatusOK, w.Code)
-		require.Equal(t, "OK", w.Body.String())
-	})
-
-	t.Run("endpoints can have same path prefix", func(t *testing.T) {
-		// Test that endpoints with similar paths work independently
-		cfgSimilar := config.Configuration{
-			AllowedOrigins: []string{"example.com"},
-			Server: config.Server{
-				SecretKeyHeaderName:  "X-Secret-Key",
-				SecretKeyHeaderValue: "secret-key",
-				IPHeader:             "X-Real-IP",
-				PathHealth:           "health",
-				PathProbe:            "health-probe", // Similar but different path
-			},
-		}
-
-		handlerSimilar, err := NewServer(
-			WithLogger(logger),
-			WithConfig(cfgSimilar),
-			WithMetrics(m),
-		)
-		require.NoError(t, err)
-
-		// Test public health endpoint
-		req := httptest.NewRequest(http.MethodGet, "/health", nil)
-		w := httptest.NewRecorder()
-		handlerSimilar.ServeHTTP(w, req)
-		require.Equal(t, http.StatusOK, w.Code)
-
-		// Test private health-probe endpoint
-		req = httptest.NewRequest(http.MethodGet, "/health-probe", nil)
-		req.Header.Set("X-Secret-Key", "secret-key")
-		w = httptest.NewRecorder()
-		handlerSimilar.ServeHTTP(w, req)
-		require.Equal(t, http.StatusOK, w.Code)
-	})
-}
-
-func TestServerWithEmptyProbePath(t *testing.T) {
-	logger := slog.New(slog.DiscardHandler)
-	cfg := config.Configuration{
-		AllowedOrigins: []string{"example.com"},
-		Server: config.Server{
-			SecretKeyHeaderName:  "X-Secret-Key",
-			SecretKeyHeaderValue: "secret-key",
-			IPHeader:             "X-Real-IP",
-			PathHealth:           "custom-health",
-			// PathProbe is empty - should use default "/healthz"
-		},
-	}
-	reg := prometheus.NewRegistry()
-	m, err := metrics.NewMetrics(reg)
-	require.NoError(t, err)
-
-	handler, err := NewServer(
-		WithLogger(logger),
-		WithConfig(cfg),
-		WithMetrics(m),
-	)
-	require.NoError(t, err)
-
-	t.Run("empty probe path uses default", func(t *testing.T) {
-		// Test that default probe path /healthz works
-		req := httptest.NewRequest(http.MethodGet, "/healthz", nil)
-		req.Header.Set("X-Secret-Key", "secret-key")
-		w := httptest.NewRecorder()
-		handler.ServeHTTP(w, req)
-		require.Equal(t, http.StatusOK, w.Code)
-
-		// Test that custom health path still works
-		req = httptest.NewRequest(http.MethodGet, "/custom-health", nil)
-		w = httptest.NewRecorder()
-		handler.ServeHTTP(w, req)
-		require.Equal(t, http.StatusOK, w.Code)
-	})
 }

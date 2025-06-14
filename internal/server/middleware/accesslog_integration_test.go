@@ -70,7 +70,6 @@ func TestAccessLogMiddlewareIntegration(t *testing.T) {
 			PathImage:            "test-image",
 			PathHealth:           "test-health",
 			PathVersion:          "test-version",
-			PathProbe:            "test-probe",
 		},
 		AllowedOrigins: []string{"example.com"},
 	}
@@ -338,41 +337,6 @@ func TestAccessLogMiddlewareIntegration(t *testing.T) {
 		require.Nil(t, requestLog)
 	})
 
-	t.Run("does not log private probe endpoint with auth", func(t *testing.T) {
-		// Clear previous log output
-		logOutput.Reset()
-
-		req := httptest.NewRequest(http.MethodGet, "/test-probe", nil)
-		req.Header.Set("X-Secret-Key", "test-secret")
-		req.Header.Set("Authorization", "Bearer token123")
-
-		w := httptest.NewRecorder()
-		handler.ServeHTTP(w, req)
-
-		require.Equal(t, http.StatusOK, w.Code)
-
-		// Parse log output
-		logLines := bytes.Split(logOutput.Bytes(), []byte("\n"))
-		var requestLog map[string]interface{}
-
-		for _, line := range logLines {
-			if len(line) == 0 {
-				continue
-			}
-			var logEntry map[string]interface{}
-			err := json.Unmarshal(line, &logEntry)
-			if err != nil {
-				continue
-			}
-			if logEntry["msg"] == "request completed" {
-				requestLog = logEntry
-				break
-			}
-		}
-
-		require.Nil(t, requestLog)
-	})
-
 	t.Run("metrics accumulate correctly across multiple requests", func(t *testing.T) {
 		// Clear previous log output
 		logOutput.Reset()
@@ -578,7 +542,6 @@ func TestAccessLogBehaviorWithRouteGroups(t *testing.T) {
 			PathImage:            "test-image",
 			PathHealth:           "test-health",
 			PathVersion:          "test-version",
-			PathProbe:            "test-probe",
 		},
 		AllowedOrigins: []string{"example.com"},
 	}
@@ -729,38 +692,6 @@ func TestAccessLogBehaviorWithRouteGroups(t *testing.T) {
 
 		// Should NOT have access log entry
 		require.Nil(t, requestLog, "Private version endpoint should not have access log entry")
-	})
-
-	t.Run("private probe endpoint is not logged", func(t *testing.T) {
-		// Clear previous log output
-		logOutput.Reset()
-
-		req := httptest.NewRequest(http.MethodGet, "/test-probe", nil)
-		req.Header.Set("X-Secret-Key", "test-secret")
-		w := httptest.NewRecorder()
-		handler.ServeHTTP(w, req)
-		require.Equal(t, http.StatusOK, w.Code)
-
-		// Parse log output
-		logLines := bytes.Split(logOutput.Bytes(), []byte("\n"))
-		var requestLog map[string]interface{}
-		for _, line := range logLines {
-			if len(line) == 0 {
-				continue
-			}
-			var logEntry map[string]interface{}
-			err := json.Unmarshal(line, &logEntry)
-			if err != nil {
-				continue
-			}
-			if logEntry["msg"] == "request completed" {
-				requestLog = logEntry
-				break
-			}
-		}
-
-		// Should NOT have access log entry
-		require.Nil(t, requestLog, "Private probe endpoint should not have access log entry")
 	})
 
 	t.Run("unauthorized access to private endpoints is not logged", func(t *testing.T) {

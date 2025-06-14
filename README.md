@@ -103,7 +103,6 @@ Ensure you have:
    echo "Image path: $(uuidgen | tr '[:upper:]' '[:lower:]')"
    echo "Health path: $(uuidgen | tr '[:upper:]' '[:lower:]')/health"
    echo "Version path: $(uuidgen | tr '[:upper:]' '[:lower:]')/version"
-   echo "Probe path: $(uuidgen | tr '[:upper:]' '[:lower:]')/healthz"
    ```
 
 3. **Edit `config.json`**:
@@ -115,7 +114,6 @@ Ensure you have:
        "path_image": "your-generated-uuid-here",
        "path_health": "your-generated-uuid-here/health",
        "path_version": "your-generated-uuid-here/version",
-       "path_probe": "your-generated-uuid-here/healthz",
        "ip_header": "CF-Connecting-IP",
        "host_headers": [
           "X-Forwarded-Host",
@@ -211,7 +209,6 @@ Use `--help` to display all available flags and their default values:
 | `server.path_image`              | `ENTRA_SERVER_PATH__IMAGE`                | URL path for the image endpoint (use a random UUID to prevent easy discovery by scanners). Exclude the leading slash                                                                                        |
 | `server.path_health`             | `ENTRA_SERVER_PATH__HEALTH`               | URL path for the public health check endpoint (must match the Docker healthcheck configuration)                                                                                                             |
 | `server.path_version`            | `ENTRA_SERVER_PATH__VERSION`              | URL path for the version information endpoint which is secured with the secret key header                                                                                                                   |
-| `server.path_probe`              | `ENTRA_SERVER_PATH__PROBE`                | URL path for the internal healthcheck endpoint which is secured with the secret key header                                                                                                                  |
 | `logging.access_log`             | `ENTRA_LOGGING_ACCESS__LOG`               | Enable internal access logging (useful when not using a reverse proxy)                                                                                                                                      |
 | `logging.json`                   | `ENTRA_LOGGING_JSON`                      | Output logs in JSON format for easier parsing and integration with log aggregators                                                                                                                          |
 | `logging.log_file`               | `ENTRA_LOGGING_LOG__FILE`                 | Log file path for persistent logging (useful in Kubernetes with logging sidecars)                                                                                                                           |
@@ -239,7 +236,7 @@ HEALTHCHECK=http://localhost:8000/health_path
 | ------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `WEB_LISTEN`              | Listening address for the main web server where Caddy (or your reverse proxy) should connect. If you specify only a port, it will be available on all interfaces |
 | `METRICS_LISTEN`          | Listening address for the Prometheus metrics endpoint. Configure IP ACLs or authentication to prevent public exposure                                            |
-| `HEALTHCHECK`             | Full URL for Docker health checks, must match the `server.path_probe` property from `config.json`                                                               |
+| `HEALTHCHECK`             | Full URL for Docker health checks, must match the `server.path_health` property from `config.json`                                                               |
 
 ### Example Configuration
 
@@ -257,8 +254,7 @@ Here's a complete example configuration for a production deployment:
     "host_headers": ["X-Forwarded-Host", "X-Original-Host"],
     "path_image": "a1b2c3d4-e5f6-7890-1234-567890abcdef",
     "path_health": "f1e2d3c4-b5a6-9870-5432-109876fedcba/health",
-    "path_version": "9876543a-bcde-f012-3456-789abcdef012/version",
-    "path_probe": "3bc614d2-cae1-4d00-9f3a-65bd85b9a6d6/healthz"
+    "path_version": "9876543a-bcde-f012-3456-789abcdef012/version"
   },
   "logging": {
     "access_log": false,
