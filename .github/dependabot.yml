@@ -7,35 +7,42 @@ version: 2
 updates:
   - package-ecosystem: "gomod"
     directory: "/"
+    target-branch: "dev"
     schedule:
       interval: "daily"
 
   - package-ecosystem: "github-actions"
     directory: "/"
+    target-branch: "dev"
     schedule:
       interval: "daily"
 
   - package-ecosystem: "docker"
     directory: "/"
+    target-branch: "dev"
     schedule:
       interval: "daily"
 
   - package-ecosystem: "docker-compose"
     directory: "/"
+    target-branch: "dev"
     schedule:
       interval: "daily"
 
   - package-ecosystem: "devcontainers"
     directory: "/"
+    target-branch: "dev"
     schedule:
       interval: "daily"
 
   - package-ecosystem: "helm"
     directory: "/helm-chart/"
+    target-branch: "dev"
     schedule:
       interval: "daily"
 
   - package-ecosystem: "docker"
     directory: "/helm-chart/"
+    target-branch: "dev"
     schedule:
       interval: "daily"
