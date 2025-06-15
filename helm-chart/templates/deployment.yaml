@@ -37,10 +37,16 @@ spec:
             httpGet:
               path: /{{ .Values.configFile.pathHealth }}
               port: http
+              httpHeaders:
+                - name: {{ .Values.configFile.secretKeyHeaderName }}
+                  value: {{ .Values.configFile.secretKeyHeaderValue }}
           readinessProbe:
             httpGet:
               path: /{{ .Values.configFile.pathHealth }}
               port: http
+              httpHeaders:
+                - name: {{ .Values.configFile.secretKeyHeaderName }}
+                  value: {{ .Values.configFile.secretKeyHeaderValue }}
           {{- with .Values.resources }}
           resources:
             {{- toYaml . | nindent 12 }}

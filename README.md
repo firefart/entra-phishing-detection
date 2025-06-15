@@ -114,6 +114,8 @@ Ensure you have:
        "path_image": "your-generated-uuid-here",
        "path_health": "your-generated-uuid-here/health",
        "path_version": "your-generated-uuid-here/version",
+       "secret_key_header_name": "X-Secret-Key-Header",
+       "secret_key_header_value": "SECRET",
        "ip_header": "CF-Connecting-IP",
        "host_headers": [
           "X-Forwarded-Host",
@@ -133,6 +135,8 @@ Ensure you have:
    WEB_LISTEN=127.0.0.1:8000
    METRICS_LISTEN=127.0.0.1:8001
    HEALTHCHECK=http://localhost:8000/your-health-path-here
+   SECRET_KEY_HEADER_NAME=X-Secret-Key-Header
+   SECRET_KEY_HEADER_VALUE=SECRET
    EOF
    ```
 
@@ -207,8 +211,8 @@ Use `--help` to display all available flags and their default values:
 | `server.ip_header`               | `ENTRA_SERVER_IP__HEADER`                 | Custom IP header when running behind a reverse proxy (ensure it's only set by trusted proxies)                                                                                                              |
 | `server.host_headers`            | `ENTRA_SERVER_HOST__HEADERS`              | Array of headers to check for the host value, in order of preference (e.g., `["X-Forwarded-Host", "X-Original-Host"]`). Leave empty when not using a reverse proxy                                          |
 | `server.path_image`              | `ENTRA_SERVER_PATH__IMAGE`                | URL path for the image endpoint (use a random UUID to prevent easy discovery by scanners). Exclude the leading slash                                                                                        |
-| `server.path_health`             | `ENTRA_SERVER_PATH__HEALTH`               | URL path for the health check endpoint (must match the Docker healthcheck configuration)                                                                                                                    |
-| `server.path_version`            | `ENTRA_SERVER_PATH__VERSION`              | URL path for the version information endpoint                                                                                                                                                               |
+| `server.path_health`             | `ENTRA_SERVER_PATH__HEALTH`               | URL path for the health check endpoint which is secured with the secret key header                                                                                                                          |
+| `server.path_version`            | `ENTRA_SERVER_PATH__VERSION`              | URL path for the version information endpoint which is secured with the secret key header                                                                                                                   |
 | `logging.access_log`             | `ENTRA_LOGGING_ACCESS__LOG`               | Enable internal access logging (useful when not using a reverse proxy)                                                                                                                                      |
 | `logging.json`                   | `ENTRA_LOGGING_JSON`                      | Output logs in JSON format for easier parsing and integration with log aggregators                                                                                                                          |
 | `logging.log_file`               | `ENTRA_LOGGING_LOG__FILE`                 | Log file path for persistent logging (useful in Kubernetes with logging sidecars)                                                                                                                           |
@@ -232,11 +236,13 @@ METRICS_LISTEN=127.0.0.1:8001
 HEALTHCHECK=http://localhost:8000/health_path
 ```
 
-| Variable         | Description                                                                                                                                                      |
-| ---------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `WEB_LISTEN`     | Listening address for the main web server where Caddy (or your reverse proxy) should connect. If you specify only a port, it will be available on all interfaces |
-| `METRICS_LISTEN` | Listening address for the Prometheus metrics endpoint. Configure IP ACLs or authentication to prevent public exposure                                            |
-| `HEALTHCHECK`    | Full URL for Docker health checks, must match the `server.path_health` property from `config.json`                                                               |
+| Variable                  | Description                                                                                                                                                      |
+| ------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `WEB_LISTEN`              | Listening address for the main web server where Caddy (or your reverse proxy) should connect. If you specify only a port, it will be available on all interfaces |
+| `METRICS_LISTEN`          | Listening address for the Prometheus metrics endpoint. Configure IP ACLs or authentication to prevent public exposure                                            |
+| `HEALTHCHECK`             | Full URL for Docker health checks, must match the `server.path_health` property from `config.json`                                                               |
+| `SECRET_KEY_HEADER_NAME`  | Secret Key Header name used for healthchecks, must match the `server.secret_key_header_name` property from `config.json`                                         |
+| `SECRET_KEY_HEADER_VALUE` | Secret Key Header value used for healthchecks, must match the `server.secret_key_header_value` property from `config.json`                                       |
 
 ### Example Configuration
 

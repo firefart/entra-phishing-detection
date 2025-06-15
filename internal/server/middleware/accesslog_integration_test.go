@@ -203,112 +203,12 @@ func TestAccessLogMiddlewareIntegration(t *testing.T) {
 		require.Positive(t, requestSizeMetric.GetHistogram().GetSampleCount())
 	})
 
-	t.Run("logs health endpoint request", func(t *testing.T) {
-		// Clear previous log output
-		logOutput.Reset()
-
-		req := httptest.NewRequest(http.MethodGet, "/test-health", nil)
-		req.Header.Set("Accept", "application/json")
-
-		w := httptest.NewRecorder()
-		handler.ServeHTTP(w, req)
-
-		require.Equal(t, http.StatusOK, w.Code)
-
-		// Parse log output to find request completed entry
-		logLines := bytes.Split(logOutput.Bytes(), []byte("\n"))
-		var requestLog map[string]interface{}
-
-		for _, line := range logLines {
-			if len(line) == 0 {
-				continue
-			}
-			var logEntry map[string]interface{}
-			err := json.Unmarshal(line, &logEntry)
-			if err != nil {
-				continue
-			}
-			if logEntry["msg"] == "request completed" {
-				requestLog = logEntry
-				break
-			}
-		}
-
-		require.NotNil(t, requestLog)
-		require.Equal(t, "GET", requestLog["method"])
-		require.Equal(t, "/test-health", requestLog["path"])
-		require.Equal(t, float64(200), requestLog["status_code"]) // nolint:testifylint
-
-		// Check headers
-		headers := requestLog["headers"].(map[string]interface{})
-		require.Equal(t, "application/json", headers["Accept"])
-
-		// Verify metrics are collected correctly
-		gathered, err := registry.Gather()
-		require.NoError(t, err)
-
-		// Find the health endpoint metric (there should be 2 total metrics now - image and health)
-		requestCountMF := findMetricFamily(gathered, "entra_phishing_detection_http_requests_total")
-		require.NotNil(t, requestCountMF, "RequestCount metric not found")
-
-		// Find the specific metric for the health endpoint
-		var healthMetric *dto.Metric
-		for _, metric := range requestCountMF.GetMetric() {
-			labelMap := make(map[string]string)
-			for _, label := range metric.GetLabel() {
-				labelMap[label.GetName()] = label.GetValue()
-			}
-			if labelMap["path"] == "/test-health" {
-				healthMetric = metric
-				break
-			}
-		}
-		require.NotNil(t, healthMetric, "Health endpoint metric not found")
-
-		// Get the actual labels from the health metric
-		actualLabels := make(map[string]string)
-		for _, label := range healthMetric.GetLabel() {
-			actualLabels[label.GetName()] = label.GetValue()
-		}
-
-		expectedLabels := map[string]string{
-			"code":   "200",
-			"method": "GET",
-			"host":   actualLabels["host"], // Use the actual host value
-			"path":   "/test-health",
-		}
-
-		// Check that RequestCount metric has been incremented for this specific request
-		requestCountMetric := findMetricWithLabels(requestCountMF, expectedLabels)
-		require.NotNil(t, requestCountMetric, "RequestCount metric with expected labels not found")
-		require.Equal(t, float64(1), requestCountMetric.GetCounter().GetValue()) // nolint:testifylint
-
-		// Check RequestDuration metric
-		requestDurationMF := findMetricFamily(gathered, "entra_phishing_detection_http_request_duration_seconds")
-		require.NotNil(t, requestDurationMF, "RequestDuration metric not found")
-		requestDurationMetric := findMetricWithLabels(requestDurationMF, expectedLabels)
-		require.NotNil(t, requestDurationMetric, "RequestDuration metric with expected labels not found")
-
-		// Check ResponseSize metric
-		responseSizeMF := findMetricFamily(gathered, "entra_phishing_detection_http_response_size_bytes")
-		require.NotNil(t, responseSizeMF, "ResponseSize metric not found")
-		responseSizeMetric := findMetricWithLabels(responseSizeMF, expectedLabels)
-		require.NotNil(t, responseSizeMetric, "ResponseSize metric with expected labels not found")
-
-		// Check RequestSize metric
-		requestSizeMF := findMetricFamily(gathered, "entra_phishing_detection_http_request_size_bytes")
-		require.NotNil(t, requestSizeMF, "RequestSize metric not found")
-		requestSizeMetric := findMetricWithLabels(requestSizeMF, expectedLabels)
-		require.NotNil(t, requestSizeMetric, "RequestSize metric with expected labels not found")
-	})
-
-	t.Run("logs version endpoint with auth", func(t *testing.T) {
+	t.Run("does not log private version endpoint", func(t *testing.T) {
 		// Clear previous log output
 		logOutput.Reset()
 
 		req := httptest.NewRequest(http.MethodGet, "/test-version", nil)
 		req.Header.Set("X-Secret-Key", "test-secret")
-		req.Header.Set("Authorization", "Bearer token123")
 
 		w := httptest.NewRecorder()
 		handler.ServeHTTP(w, req)
@@ -334,73 +234,42 @@ func TestAccessLogMiddlewareIntegration(t *testing.T) {
 			}
 		}
 
-		require.NotNil(t, requestLog)
-		require.Equal(t, "GET", requestLog["method"])
-		require.Equal(t, "/test-version", requestLog["path"])
-		require.Equal(t, float64(200), requestLog["status_code"]) // nolint:testifylint
+		require.Nil(t, requestLog)
+	})
 
-		// Check that sensitive headers are logged (this is expected behavior)
-		headers := requestLog["headers"].(map[string]interface{})
-		require.Equal(t, "test-secret", headers["X-Secret-Key"])
-		require.Equal(t, "Bearer token123", headers["Authorization"])
+	t.Run("does not log private health endpoint", func(t *testing.T) {
+		// Clear previous log output
+		logOutput.Reset()
 
-		// Verify metrics are collected correctly
-		gathered, err := registry.Gather()
-		require.NoError(t, err)
+		req := httptest.NewRequest(http.MethodGet, "/test-health", nil)
+		req.Header.Set("X-Secret-Key", "test-secret")
 
-		// Find the version endpoint metric (there should be 3 total metrics now - image, health, and version)
-		requestCountMF := findMetricFamily(gathered, "entra_phishing_detection_http_requests_total")
-		require.NotNil(t, requestCountMF, "RequestCount metric not found")
+		w := httptest.NewRecorder()
+		handler.ServeHTTP(w, req)
 
-		// Find the specific metric for the version endpoint
-		var versionMetric *dto.Metric
-		for _, metric := range requestCountMF.GetMetric() {
-			labelMap := make(map[string]string)
-			for _, label := range metric.GetLabel() {
-				labelMap[label.GetName()] = label.GetValue()
+		require.Equal(t, http.StatusOK, w.Code)
+		require.Equal(t, "OK", w.Body.String())
+
+		// Parse log output
+		logLines := bytes.Split(logOutput.Bytes(), []byte("\n"))
+		var requestLog map[string]interface{}
+
+		for _, line := range logLines {
+			if len(line) == 0 {
+				continue
 			}
-			if labelMap["path"] == "/test-version" {
-				versionMetric = metric
+			var logEntry map[string]interface{}
+			err := json.Unmarshal(line, &logEntry)
+			if err != nil {
+				continue
+			}
+			if logEntry["msg"] == "request completed" {
+				requestLog = logEntry
 				break
 			}
 		}
-		require.NotNil(t, versionMetric, "Version endpoint metric not found")
 
-		// Get the actual labels from the version metric
-		actualLabels := make(map[string]string)
-		for _, label := range versionMetric.GetLabel() {
-			actualLabels[label.GetName()] = label.GetValue()
-		}
-
-		expectedLabels := map[string]string{
-			"code":   "200",
-			"method": "GET",
-			"host":   actualLabels["host"], // Use the actual host value
-			"path":   "/test-version",
-		}
-
-		// Check that RequestCount metric has been incremented for this specific request
-		requestCountMetric := findMetricWithLabels(requestCountMF, expectedLabels)
-		require.NotNil(t, requestCountMetric, "RequestCount metric with expected labels not found")
-		require.Equal(t, float64(1), requestCountMetric.GetCounter().GetValue()) // nolint:testifylint
-
-		// Check RequestDuration metric
-		requestDurationMF := findMetricFamily(gathered, "entra_phishing_detection_http_request_duration_seconds")
-		require.NotNil(t, requestDurationMF, "RequestDuration metric not found")
-		requestDurationMetric := findMetricWithLabels(requestDurationMF, expectedLabels)
-		require.NotNil(t, requestDurationMetric, "RequestDuration metric with expected labels not found")
-
-		// Check ResponseSize metric
-		responseSizeMF := findMetricFamily(gathered, "entra_phishing_detection_http_response_size_bytes")
-		require.NotNil(t, responseSizeMF, "ResponseSize metric not found")
-		responseSizeMetric := findMetricWithLabels(responseSizeMF, expectedLabels)
-		require.NotNil(t, responseSizeMetric, "ResponseSize metric with expected labels not found")
-
-		// Check RequestSize metric
-		requestSizeMF := findMetricFamily(gathered, "entra_phishing_detection_http_request_size_bytes")
-		require.NotNil(t, requestSizeMF, "RequestSize metric not found")
-		requestSizeMetric := findMetricWithLabels(requestSizeMF, expectedLabels)
-		require.NotNil(t, requestSizeMetric, "RequestSize metric with expected labels not found")
+		require.Nil(t, requestLog)
 	})
 
 	t.Run("metrics accumulate correctly across multiple requests", func(t *testing.T) {
@@ -589,5 +458,206 @@ func TestAccessLogMiddlewareIntegration(t *testing.T) {
 		responseHistogram := responseSizeMetric.GetHistogram()
 		require.Positive(t, responseHistogram.GetSampleCount(), "Should have recorded response size samples")
 		// Response size might be 0 for health endpoint, so we just check that it was recorded
+	})
+}
+
+func TestAccessLogBehaviorWithRouteGroups(t *testing.T) {
+	// Create a buffer to capture log output
+	var logOutput bytes.Buffer
+	logger := slog.New(slog.NewJSONHandler(&logOutput, &slog.HandlerOptions{
+		Level: slog.LevelInfo,
+	}))
+
+	// Create test configuration
+	cfg := config.Configuration{
+		Server: config.Server{
+			SecretKeyHeaderName:  "X-Secret-Key",
+			SecretKeyHeaderValue: "test-secret",
+			IPHeader:             "X-Real-IP",
+			PathImage:            "test-image",
+			PathHealth:           "test-health",
+			PathVersion:          "test-version",
+		},
+		AllowedOrigins: []string{"example.com"},
+	}
+
+	// Create metrics
+	registry := prometheus.NewRegistry()
+	m, err := metrics.NewMetrics(registry, metrics.WithAccessLog())
+	require.NoError(t, err)
+
+	// Create server with accesslog middleware
+	handler, err := server.NewServer(
+		server.WithLogger(logger),
+		server.WithConfig(cfg),
+		server.WithMetrics(m),
+		server.WithDebug(false),
+		server.WithAccessLog(),
+	)
+	require.NoError(t, err)
+
+	t.Run("public routes are logged", func(t *testing.T) {
+		// Clear previous log output
+		logOutput.Reset()
+
+		// Test image endpoint (public)
+		req := httptest.NewRequest(http.MethodGet, "/test-image", nil)
+		req.Header.Set("X-Real-IP", "192.168.1.100")
+		w := httptest.NewRecorder()
+		handler.ServeHTTP(w, req)
+		require.Equal(t, http.StatusOK, w.Code)
+
+		// Parse log output to find request completed entry
+		logLines := bytes.Split(logOutput.Bytes(), []byte("\n"))
+		var requestLog map[string]interface{}
+		for _, line := range logLines {
+			if len(line) == 0 {
+				continue
+			}
+			var logEntry map[string]interface{}
+			err := json.Unmarshal(line, &logEntry)
+			if err != nil {
+				continue
+			}
+			if logEntry["msg"] == "request completed" {
+				requestLog = logEntry
+				break
+			}
+		}
+
+		// Should have access log entry
+		require.NotNil(t, requestLog, "Image endpoint should have access log entry")
+		require.Equal(t, "GET", requestLog["method"])
+		require.Equal(t, "/test-image", requestLog["path"])
+	})
+
+	t.Run("catch-all route is logged", func(t *testing.T) {
+		// Clear previous log output
+		logOutput.Reset()
+
+		req := httptest.NewRequest(http.MethodGet, "/unknown-route", nil)
+		w := httptest.NewRecorder()
+		handler.ServeHTTP(w, req)
+		require.Equal(t, http.StatusOK, w.Code)
+
+		// Parse log output to find request completed entry
+		logLines := bytes.Split(logOutput.Bytes(), []byte("\n"))
+		var requestLog map[string]interface{}
+		for _, line := range logLines {
+			if len(line) == 0 {
+				continue
+			}
+			var logEntry map[string]interface{}
+			err := json.Unmarshal(line, &logEntry)
+			if err != nil {
+				continue
+			}
+			if logEntry["msg"] == "request completed" {
+				requestLog = logEntry
+				break
+			}
+		}
+
+		// Should have access log entry for catch-all
+		require.NotNil(t, requestLog, "Catch-all route should have access log entry")
+		require.Equal(t, "GET", requestLog["method"])
+		require.Equal(t, "/unknown-route", requestLog["path"])
+	})
+
+	t.Run("private version endpoint is not logged", func(t *testing.T) {
+		// Clear previous log output
+		logOutput.Reset()
+
+		req := httptest.NewRequest(http.MethodGet, "/test-version", nil)
+		req.Header.Set("X-Secret-Key", "test-secret")
+		w := httptest.NewRecorder()
+		handler.ServeHTTP(w, req)
+		require.Equal(t, http.StatusOK, w.Code)
+
+		// Parse log output
+		logLines := bytes.Split(logOutput.Bytes(), []byte("\n"))
+		var requestLog map[string]interface{}
+		for _, line := range logLines {
+			if len(line) == 0 {
+				continue
+			}
+			var logEntry map[string]interface{}
+			err := json.Unmarshal(line, &logEntry)
+			if err != nil {
+				continue
+			}
+			if logEntry["msg"] == "request completed" {
+				requestLog = logEntry
+				break
+			}
+		}
+
+		// Should NOT have access log entry
+		require.Nil(t, requestLog, "Private version endpoint should not have access log entry")
+	})
+
+	t.Run("health endpoint is not logged", func(t *testing.T) {
+		// Clear previous log output
+		logOutput.Reset()
+
+		req := httptest.NewRequest(http.MethodGet, "/test-health", nil)
+		req.Header.Set("X-Secret-Key", "test-secret")
+		w := httptest.NewRecorder()
+		handler.ServeHTTP(w, req)
+		require.Equal(t, http.StatusOK, w.Code)
+		require.Equal(t, "OK", w.Body.String()) // Should return OK for health check
+
+		// Parse log output
+		logLines := bytes.Split(logOutput.Bytes(), []byte("\n"))
+		var requestLog map[string]interface{}
+		for _, line := range logLines {
+			if len(line) == 0 {
+				continue
+			}
+			var logEntry map[string]interface{}
+			err := json.Unmarshal(line, &logEntry)
+			if err != nil {
+				continue
+			}
+			if logEntry["msg"] == "request completed" {
+				requestLog = logEntry
+				break
+			}
+		}
+
+		// Should NOT have access log entry
+		require.Nil(t, requestLog, "health endpoint should not have access log entry")
+	})
+
+	t.Run("unauthorized access to private endpoints is not logged", func(t *testing.T) {
+		// Clear previous log output
+		logOutput.Reset()
+
+		// Try to access private version endpoint without auth
+		req := httptest.NewRequest(http.MethodGet, "/test-version", nil)
+		w := httptest.NewRecorder()
+		handler.ServeHTTP(w, req)
+		require.Equal(t, http.StatusOK, w.Code) // Secret key middleware returns 200 with empty body
+		require.Empty(t, w.Body.String())       // Should be empty body
+
+		// Parse log output - should not have access log entries
+		logLines := bytes.Split(logOutput.Bytes(), []byte("\n"))
+		requestLogCount := 0
+		for _, line := range logLines {
+			if len(line) == 0 {
+				continue
+			}
+			var logEntry map[string]interface{}
+			err := json.Unmarshal(line, &logEntry)
+			if err != nil {
+				continue
+			}
+			if logEntry["msg"] == "request completed" {
+				requestLogCount++
+			}
+		}
+
+		// Should NOT have any access log entries
+		require.Equal(t, 0, requestLogCount, "Unauthorized requests to private endpoints should not be logged")
 	})
 }
