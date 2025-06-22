@@ -5,6 +5,9 @@ on:
   schedule:
     - cron: "0 12 * * *"
 
+permissions:
+  contents: write
+
 jobs:
   update:
     timeout-minutes: 30
