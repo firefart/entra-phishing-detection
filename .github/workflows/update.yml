@@ -55,10 +55,10 @@ jobs:
           PR_URL: ${{ steps.cpr.outputs.pull-request-url }}
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Invoke Build workflow
+      - name: Invoke build workflow
         uses: benc-uk/workflow-dispatch@v1
         with:
-          workflow: Build
+          workflow: build
           ref: "update-dependencies"
 
       - name: Invoke hadolint workflow
@@ -67,10 +67,10 @@ jobs:
           workflow: hadolint
           ref: "update-dependencies"
 
-      - name: Invoke lint workflow
+      - name: Invoke golangci workflow
         uses: benc-uk/workflow-dispatch@v1
         with:
-          workflow: lint
+          workflow: golangci
           ref: "update-dependencies"
 
       - name: Invoke yamllint workflow
