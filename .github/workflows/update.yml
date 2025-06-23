@@ -54,3 +54,27 @@ jobs:
         env:
           PR_URL: ${{ steps.cpr.outputs.pull-request-url }}
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Invoke Build workflow
+        uses: benc-uk/workflow-dispatch@v1
+        with:
+          workflow: Build
+          ref: "update-dependencies"
+
+      - name: Invoke hadolint workflow
+        uses: benc-uk/workflow-dispatch@v1
+        with:
+          workflow: hadolint
+          ref: "update-dependencies"
+
+      - name: Invoke lint workflow
+        uses: benc-uk/workflow-dispatch@v1
+        with:
+          workflow: lint
+          ref: "update-dependencies"
+
+      - name: Invoke yamllint workflow
+        uses: benc-uk/workflow-dispatch@v1
+        with:
+          workflow: yamllint
+          ref: "update-dependencies"
