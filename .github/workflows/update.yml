@@ -8,6 +8,7 @@ on:
 permissions:
   contents: write
   pull-requests: write
+  actions: write
 
 jobs:
   update-dependencies:
@@ -55,26 +56,33 @@ jobs:
           PR_URL: ${{ steps.cpr.outputs.pull-request-url }}
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
+      # actions created by GITHUB_TOKEN do not trigger workflows
+      # so trigger the workflows manually to meet the branch protection requirements
+
       - name: Invoke Build workflow
-        uses: benc-uk/workflow-dispatch@v1
-        with:
-          workflow: Build
-          ref: "update-dependencies"
+        run: gh workflow run "$JOB_NAME" --ref "$BRANCH_NAME"
+        env:
+          JOB_NAME: "Build"
+          BRANCH_NAME: "update-dependencies"
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Invoke hadolint workflow
-        uses: benc-uk/workflow-dispatch@v1
-        with:
-          workflow: hadolint
-          ref: "update-dependencies"
+        run: gh workflow run "$JOB_NAME" --ref "$BRANCH_NAME"
+        env:
+          JOB_NAME: "hadolint"
+          BRANCH_NAME: "update-dependencies"
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Invoke golangci-lint workflow
-        uses: benc-uk/workflow-dispatch@v1
-        with:
-          workflow: golangci-lint
-          ref: "update-dependencies"
+        run: gh workflow run "$JOB_NAME" --ref "$BRANCH_NAME"
+        env:
+          JOB_NAME: "golangci-lint"
+          BRANCH_NAME: "update-dependencies"
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Invoke yamllint workflow
-        uses: benc-uk/workflow-dispatch@v1
-        with:
-          workflow: yamllint
-          ref: "update-dependencies"
+        run: gh workflow run "$JOB_NAME" --ref "$BRANCH_NAME"
+        env:
+          JOB_NAME: "yamllint"
+          BRANCH_NAME: "update-dependencies"
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
