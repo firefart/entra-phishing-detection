@@ -49,15 +49,15 @@ jobs:
           commit-message: "Update dependencies"
           delete-branch: true
 
+      - name: Enable Pull Request Automerge and delete if all checks pass
+        if: steps.cpr.outputs.pull-request-operation == 'created'
+        run: gh pr merge --auto --delete-branch --merge "$PR_URL"
+        env:
+          PR_URL: ${{ steps.cpr.outputs.pull-request-url }}
+          GH_TOKEN: ${{ steps.generate-token.outputs.token }}
+
       - name: Print outputs
         if: ${{ steps.cpr.outputs.pull-request-number }}
         run: |
           echo "Pull Request Number - ${{ steps.cpr.outputs.pull-request-number }}"
           echo "Pull Request URL - ${{ steps.cpr.outputs.pull-request-url }}"
-
-      - name: Enable Pull Request Automerge if all checks pass
-        if: steps.cpr.outputs.pull-request-operation == 'created'
-        run: gh pr merge --auto --merge "$PR_URL"
-        env:
-          PR_URL: ${{ steps.cpr.outputs.pull-request-url }}
-          GH_TOKEN: ${{ steps.generate-token.outputs.token }}
