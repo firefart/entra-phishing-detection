@@ -34,7 +34,7 @@ jobs:
         run: task update
 
       - name: Open Pull Request to update dependencies
-        uses: peter-evans/create-pull-request@v5
+        uses: peter-evans/create-pull-request@v7
         id: cpr
         with:
           branch: "update-dependencies"
