@@ -23,6 +23,9 @@ spec:
           imagePullPolicy: {{ .Values.image.pullPolicy }}
           command: ["/app/app"]
           args: ["-config", "/config/config.json"]
+          securityContext:
+            readOnlyRootFilesystem: true
+            runAsNonRoot: true
           ports:
             - name: http
               containerPort: 8000
@@ -63,7 +66,10 @@ spec:
           imagePullPolicy: {{ .Values.fluentBit.image.pullPolicy }}
           command: ["/fluent-bit/bin/fluent-bit"]
           args: ["-c", "/config/fluentbit.yml"]
-          {{- with .Values.resources }}
+          securityContext:
+            readOnlyRootFilesystem: true
+            runAsNonRoot: true
+          {{- with .Values.fluentBit.resources }}
           resources:
             {{- toYaml . | nindent 12 }}
           {{- end }}

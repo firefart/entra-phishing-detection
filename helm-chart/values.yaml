@@ -19,6 +19,13 @@ fluentBit:
     repository: "fluent/fluent-bit"
     tag: "4.0.3"
     pullPolicy: Always
+  resources:
+    requests:
+      cpu: 50m
+      memory: 100Mi
+    limits:
+      cpu: 200m
+      memory: 200Mi
 
 # This is to override the chart name.
 nameOverride: ""
@@ -70,8 +77,10 @@ ingress:
 resources:
   requests:
     cpu: 200m
+    memory: 100Mi
   limits:
     cpu: 200m
+    memory: 500Mi
 
 pvc:
   size: 1Gi
@@ -89,7 +98,7 @@ autoscaling:
   minReplicas: 2
   maxReplicas: 4
   targetCPUUtilizationPercentage: 80
-  # targetMemoryUtilizationPercentage: 80
+  targetMemoryUtilizationPercentage: 80
 
 configFile:
   secretKeyHeaderName: "X-Secret-Key-Header"

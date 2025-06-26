@@ -10,6 +10,7 @@ permissions:
 
 jobs:
   update-dependencies:
+    name: Update Dependencies
     runs-on: ubuntu-latest
     steps:
       - name: Generate a token
