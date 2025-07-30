@@ -1,0 +1,31 @@
+name: Create PR to sync dev into main
+on:
+  push:
+    branches:
+      - dev
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: dev-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  sync-dev:
+    name: Sync DEV to MAIN
+    timeout-minutes: 30
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Generate a token
+        id: generate-token
+        uses: actions/create-github-app-token@v2
+        with:
+          app-id: ${{ vars.APP_ID }}
+          private-key: ${{ secrets.APP_PRIVATE_KEY }}
+
+      # https://github.com/peter-evans/create-pull-request
+      - name: Open Pull Request with new image
+        run: gh pr create --title "Merge DEV into MAIN" --body "💩💩💩" -H dev -B main -a "firefart" -R "$GITHUB_REPOSITORY"
+        continue-on-error: true # the action will error if there is already a PR, ignore this error
+        env:
+          GH_TOKEN: ${{ steps.generate-token.outputs.token }}
