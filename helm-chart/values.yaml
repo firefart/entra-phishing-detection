@@ -113,3 +113,4 @@ configFile:
   gracefulTimeout: "5s"
   allowedOrigins:
     - "login.microsoftonline.com"
+    - "login.microsoft.com"

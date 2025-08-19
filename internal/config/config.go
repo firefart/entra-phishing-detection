@@ -62,7 +62,7 @@ var defaultConfig = Configuration{
 		GracefulTimeout:     10 * time.Second,
 		SecretKeyHeaderName: "X-Secret-Key-Header",
 	},
-	AllowedOrigins: []string{"login.microsoftonline.com"},
+	AllowedOrigins: []string{"login.microsoftonline.com", "login.microsoft.com"},
 	Timeout:        5 * time.Second,
 }
 
