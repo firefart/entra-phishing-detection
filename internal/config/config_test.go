@@ -63,7 +63,7 @@ func TestGetConfigDefaults(t *testing.T) {
 
 	// Should use default values
 	require.Equal(t, 10*time.Second, c.Server.GracefulTimeout)
-	require.Equal(t, []string{"login.microsoftonline.com"}, c.AllowedOrigins)
+	require.Equal(t, []string{"login.microsoftonline.com", "login.microsoft.com"}, c.AllowedOrigins)
 	require.Equal(t, 5*time.Second, c.Timeout)
 }
 
@@ -418,7 +418,7 @@ func TestGetConfigNoFile(t *testing.T) {
 	require.Equal(t, 10*time.Second, c.Server.GracefulTimeout)
 	require.Equal(t, "X-Secret-Key-Header", c.Server.SecretKeyHeaderName)
 	require.Equal(t, "SECRET", c.Server.SecretKeyHeaderValue)
-	require.Equal(t, []string{"login.microsoftonline.com"}, c.AllowedOrigins)
+	require.Equal(t, []string{"login.microsoftonline.com", "login.microsoft.com"}, c.AllowedOrigins)
 	require.Equal(t, 5*time.Second, c.Timeout)
 }
 

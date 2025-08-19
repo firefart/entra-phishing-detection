@@ -24,7 +24,6 @@ import (
 	"github.com/hashicorp/go-multierror"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
-	"go.uber.org/automaxprocs/maxprocs"
 	"gopkg.in/natefinch/lumberjack.v2"
 )
 
@@ -33,10 +32,6 @@ type cliOptions struct {
 }
 
 func main() {
-	if _, err := maxprocs.Set(); err != nil {
-		log.Fatalf("Error on gomaxprocs: %v\n", err)
-	}
-
 	var version bool
 	var configCheckMode bool
 	var configFilename string

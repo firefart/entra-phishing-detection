@@ -15,7 +15,7 @@ This project implements a simple but effective Entra ID phishing protection mech
 The protection leverages Microsoft Entra ID's company branding feature to provide custom CSS styling and background images. The background image is served by this web service and changes dynamically based on the request parameters and origin validation.
 
 In a legitimate login flow:
-1. Users visit the official Microsoft login page at `login.microsoftonline.com`
+1. Users visit the official Microsoft login page at `login.microsoftonline.com` or `login.microsoft.com` when using a passkey
 2. The login page requests the background image from your service
 3. The `Referer` header contains the legitimate Microsoft domain
 4. Your service serves a normal (transparent) background image
@@ -124,7 +124,8 @@ Ensure you have:
         ],
      },
      "allowed_origins": [
-       "login.microsoftonline.com"
+       "login.microsoftonline.com",
+       "login.microsoft.com"
      ]
    }
    ```
@@ -224,7 +225,7 @@ Use `--help` to display all available flags and their default values:
 | `images.ok`                      | `ENTRA_IMAGES_OK_<LANG>`                  | Map of language codes to file paths for normal (non-phishing) images. Use two-letter ISO language codes (e.g., `ENTRA_IMAGES_OK_EN`, `ENTRA_IMAGES_OK_DE`). If unset, a default 1x1 transparent SVG is used |
 | `images.phishing`                | `ENTRA_IMAGES_PHISHING_<LANG>`            | Map of language codes to file paths for phishing warning images. Similar to `images.ok` but for warning images. You can configure only one type and use defaults for the other                              |
 | `timeout`                        | `ENTRA_TIMEOUT`                           | General request timeout for HTTP operations (e.g., `5s`)                                                                                                                                                    |
-| `allowed_origins`                | `ENTRA_ALLOWED__ORIGINS`                  | Array of hostnames considered legitimate. Defaults to `["login.microsoftonline.com"]`. Add custom domains if using ADFS or other identity providers                                                         |
+| `allowed_origins`                | `ENTRA_ALLOWED__ORIGINS`                  | Array of hostnames considered legitimate. Defaults to `["login.microsoftonline.com", "login.microsoft.com"]`. Add custom domains if using ADFS or other identity providers                                                         |
 
 ### Environment Variables for Docker Compose
 
@@ -289,6 +290,7 @@ Here's a complete example configuration for a production deployment:
   "timeout": "10s",
   "allowed_origins": [
     "login.microsoftonline.com",
+    "login.microsoft.com",
     "adfs.company.com",
     "login.company.com"
   ]

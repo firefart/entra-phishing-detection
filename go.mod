@@ -1,6 +1,6 @@
 module github.com/firefart/entra-phishing-detection
 
-go 1.24.0
+go 1.25
 
 require (
 	github.com/charmbracelet/log v0.4.2
@@ -16,7 +16,6 @@ require (
 	github.com/prometheus/client_golang v1.23.0
 	github.com/prometheus/client_model v0.6.2
 	github.com/stretchr/testify v1.10.0
-	go.uber.org/automaxprocs v1.6.0
 	gopkg.in/natefinch/lumberjack.v2 v2.2.1
 )
 
@@ -67,7 +66,7 @@ require (
 	github.com/tdewolff/parse/v2 v2.8.1 // indirect
 	github.com/xo/terminfo v0.0.0-20220910002029-abceb7e1c41e // indirect
 	golang.org/x/crypto v0.41.0 // indirect
-	golang.org/x/exp v0.0.0-20250813145105-42675adae3e6 // indirect
+	golang.org/x/exp v0.0.0-20250819193227-8b4c13bb791b // indirect
 	golang.org/x/mod v0.27.0 // indirect
 	golang.org/x/net v0.43.0 // indirect
 	golang.org/x/sync v0.16.0 // indirect
