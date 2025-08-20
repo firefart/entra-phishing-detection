@@ -12,6 +12,7 @@ import (
 	"net/http/pprof"
 	"os"
 	"os/signal"
+	"path/filepath"
 	"runtime/debug"
 	"syscall"
 	"time"
@@ -77,6 +78,11 @@ func main() {
 
 	var logger *slog.Logger
 	if configuration.Logging.LogFile != "" {
+		// Create parent directory if it doesn't exist
+		if err := os.MkdirAll(filepath.Dir(configuration.Logging.LogFile), 0o755); err != nil {
+			log.Fatalf("Error creating log directory: %v\n", err)
+		}
+
 		logFile, err := os.OpenFile(configuration.Logging.LogFile, os.O_RDWR|os.O_CREATE|os.O_APPEND, 0o666)
 		if err != nil {
 			log.Fatalf("Error opening log file: %v\n", err)
