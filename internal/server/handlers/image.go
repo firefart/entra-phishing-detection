@@ -97,11 +97,17 @@ func (h *ImageHandler) phishingAttempt(w http.ResponseWriter, r *http.Request, r
 	if !ok {
 		ip = r.RemoteAddr
 	}
+
+	// Get header keys and sort them
+	headerKeys := make([]string, 0, len(r.Header))
+	for k := range r.Header {
+		headerKeys = append(headerKeys, k)
+	}
+	slices.Sort(headerKeys)
+
 	header := make([]any, len(r.Header))
-	i := 0
-	for k, v := range r.Header {
-		header[i] = slog.String(http.CanonicalHeaderKey(k), strings.Join(v, ", "))
-		i++
+	for i, k := range headerKeys {
+		header[i] = slog.String(http.CanonicalHeaderKey(k), strings.Join(r.Header[k], ", "))
 	}
 
 	language, image := h.getImagePhishing(r)
