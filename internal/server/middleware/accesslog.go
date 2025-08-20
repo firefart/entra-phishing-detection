@@ -3,6 +3,7 @@ package middleware
 import (
 	"log/slog"
 	"net/http"
+	"slices"
 	"strconv"
 	"strings"
 	"time"
@@ -74,9 +75,15 @@ func AccessLog(config AccessLogConfig) func(next http.Handler) http.Handler {
 			duration := time.Since(start)
 
 			// Prepare header attributes for logging
+			headerKeys := make([]string, 0, len(r.Header))
+			for k := range r.Header {
+				headerKeys = append(headerKeys, k)
+			}
+			slices.Sort(headerKeys)
+
 			headerAttrs := make([]any, 0, len(r.Header))
-			for name, values := range r.Header {
-				headerAttrs = append(headerAttrs, slog.String(http.CanonicalHeaderKey(name), strings.Join(values, ", ")))
+			for _, k := range headerKeys {
+				headerAttrs = append(headerAttrs, slog.String(http.CanonicalHeaderKey(k), strings.Join(r.Header[k], ", ")))
 			}
 
 			// Labels: "code", "method", "host", "url"
