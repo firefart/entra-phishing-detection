@@ -40,6 +40,8 @@
   "timeout": "5s",
   "allowed_origins": [
     "login.microsoftonline.com",
-    "login.microsoft.com"
+    "login.microsoft.com",
+    "autologon.microsoftazuread-sso.com",
+    "device.login.microsoftonline.com"
   ]
 }

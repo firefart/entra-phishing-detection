@@ -15,7 +15,7 @@ This project implements a simple but effective Entra ID phishing protection mech
 The protection leverages Microsoft Entra ID's company branding feature to provide custom CSS styling and background images. The background image is served by this web service and changes dynamically based on the request parameters and origin validation.
 
 In a legitimate login flow:
-1. Users visit the official Microsoft login page at `login.microsoftonline.com` or `login.microsoft.com` when using a passkey
+1. Users visit the official Microsoft login page at `login.microsoftonline.com` or `login.microsoft.com` when using a passkey (or some other weird looking domains)
 2. The login page requests the background image from your service
 3. The `Referer` header contains the legitimate Microsoft domain
 4. Your service serves a normal (transparent) background image
@@ -118,14 +118,16 @@ Ensure you have:
        "secret_key_header_value": "SECRET",
        "ip_header": "CF-Connecting-IP",
        "host_headers": [
-          "X-Forwarded-Host",
-          "X-Original-Host",
-          "X-Real-Host"
-        ],
+         "X-Forwarded-Host",
+         "X-Original-Host",
+         "X-Real-Host"
+       ],
      },
      "allowed_origins": [
        "login.microsoftonline.com",
-       "login.microsoft.com"
+       "login.microsoft.com",
+       "autologon.microsoftazuread-sso.com",
+       "device.login.microsoftonline.com"
      ]
    }
    ```
@@ -291,6 +293,8 @@ Here's a complete example configuration for a production deployment:
   "allowed_origins": [
     "login.microsoftonline.com",
     "login.microsoft.com",
+    "autologon.microsoftazuread-sso.com",
+    "device.login.microsoftonline.com",
     "adfs.company.com",
     "login.company.com"
   ]
