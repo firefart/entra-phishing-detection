@@ -38,6 +38,9 @@ type ImageHandlerOptions struct {
 	ImagesOK map[string][]byte
 	// ImagesPhishing contains the images to return for phishing attempts.
 	ImagesPhishing map[string][]byte
+	// TreatMissingRefererAsPhishing indicates whether to treat requests with
+	// a missing Referer header as phishing attempts.
+	TreatMissingRefererAsPhishing bool
 }
 
 func NewImageHandler(opts ImageHandlerOptions) *ImageHandler {
@@ -150,8 +153,13 @@ func (h *ImageHandler) Handler(w http.ResponseWriter, r *http.Request) error {
 
 	referer := r.Header.Get("Referer")
 	if referer == "" {
-		return h.phishingAttempt(w, r, reasonMissingReferer)
+		if h.TreatMissingRefererAsPhishing {
+			return h.phishingAttempt(w, r, reasonMissingReferer)
+		} else {
+			return h.safeURL(w, r)
+		}
 	}
+
 	parsed, err := url.Parse(referer)
 	if err != nil {
 		return h.phishingAttempt(w, r, reasonInvalidReferer)

@@ -116,11 +116,12 @@ func NewServer(opts ...OptionsServerFunc) (http.Handler, error) {
 			}))
 		}
 		r.HandleFunc(fmt.Sprintf("GET %s", imageRoute), handlers.NewImageHandler(handlers.ImageHandlerOptions{
-			AllowedOrigins: s.config.AllowedOrigins,
-			Logger:         s.logger,
-			Metrics:        s.metrics,
-			ImagesOK:       s.imagesOK,
-			ImagesPhishing: s.imagesPhishing,
+			AllowedOrigins:                s.config.AllowedOrigins,
+			Logger:                        s.logger,
+			Metrics:                       s.metrics,
+			ImagesOK:                      s.imagesOK,
+			ImagesPhishing:                s.imagesPhishing,
+			TreatMissingRefererAsPhishing: s.config.TreatMissingRefererAsPhishing,
 		}).Handler)
 
 		// custom 404 for the rest
