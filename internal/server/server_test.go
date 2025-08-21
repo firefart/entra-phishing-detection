@@ -570,3 +570,169 @@ func TestCustomImagesCompletelyOverrideDefaults(t *testing.T) {
 	require.Len(t, s.imagesOK, 2)
 	require.Len(t, s.imagesPhishing, 2)
 }
+
+func TestServer_TreatMissingRefererAsPhishing_Integration(t *testing.T) {
+	logger := slog.New(slog.DiscardHandler)
+	reg := prometheus.NewRegistry()
+	m, err := metrics.NewMetrics(reg)
+	require.NoError(t, err)
+
+	// Create temporary files for testing
+	tempDir := t.TempDir()
+	okImagePath := filepath.Join(tempDir, "ok.svg")
+	phishingImagePath := filepath.Join(tempDir, "phishing.svg")
+
+	okContent := "test_ok_image"
+	phishingContent := "test_phishing_image"
+
+	err = os.WriteFile(okImagePath, []byte(okContent), 0644)
+	require.NoError(t, err)
+	err = os.WriteFile(phishingImagePath, []byte(phishingContent), 0644)
+	require.NoError(t, err)
+
+	testCases := []struct {
+		name                          string
+		treatMissingRefererAsPhishing bool
+		referer                       string
+		expectedImageContent          string
+		expectedStatus                int
+	}{
+		{
+			name:                          "Missing referer treated as phishing",
+			treatMissingRefererAsPhishing: true,
+			referer:                       "",
+			expectedImageContent:          phishingContent,
+			expectedStatus:                http.StatusOK,
+		},
+		{
+			name:                          "Missing referer treated as safe",
+			treatMissingRefererAsPhishing: false,
+			referer:                       "",
+			expectedImageContent:          okContent,
+			expectedStatus:                http.StatusOK,
+		},
+		{
+			name:                          "Valid referer always returns OK regardless of setting (true)",
+			treatMissingRefererAsPhishing: true,
+			referer:                       "https://example.com/login",
+			expectedImageContent:          okContent,
+			expectedStatus:                http.StatusOK,
+		},
+		{
+			name:                          "Valid referer always returns OK regardless of setting (false)",
+			treatMissingRefererAsPhishing: false,
+			referer:                       "https://example.com/auth",
+			expectedImageContent:          okContent,
+			expectedStatus:                http.StatusOK,
+		},
+		{
+			name:                          "Invalid referer always returns phishing regardless of setting (true)",
+			treatMissingRefererAsPhishing: true,
+			referer:                       "https://malicious.com",
+			expectedImageContent:          phishingContent,
+			expectedStatus:                http.StatusOK,
+		},
+		{
+			name:                          "Invalid referer always returns phishing regardless of setting (false)",
+			treatMissingRefererAsPhishing: false,
+			referer:                       "https://evil.example",
+			expectedImageContent:          phishingContent,
+			expectedStatus:                http.StatusOK,
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			cfg := config.Configuration{
+				AllowedOrigins:                []string{"example.com"},
+				TreatMissingRefererAsPhishing: tc.treatMissingRefererAsPhishing,
+				Server: config.Server{
+					SecretKeyHeaderName:  "X-Secret-Key",
+					SecretKeyHeaderValue: "secret",
+					PathImage:            "image",
+				},
+			}
+
+			// Use custom images with file paths
+			customImages := config.Images{
+				OK:       map[string]string{"en": okImagePath},
+				Phishing: map[string]string{"en": phishingImagePath},
+			}
+
+			handler, err := NewServer(
+				WithLogger(logger),
+				WithConfig(cfg),
+				WithMetrics(m),
+				WithCustomImages(customImages),
+			)
+			require.NoError(t, err)
+			require.NotNil(t, handler)
+
+			// Make request to image endpoint
+			req := httptest.NewRequest(http.MethodGet, "/image", nil)
+			if tc.referer != "" {
+				req.Header.Set("Referer", tc.referer)
+			}
+
+			rec := httptest.NewRecorder()
+			handler.ServeHTTP(rec, req)
+
+			require.Equal(t, tc.expectedStatus, rec.Code)
+			require.Equal(t, tc.expectedImageContent, rec.Body.String())
+
+			// Verify standard headers are set
+			require.Equal(t, `inline; filename="image.svg"`, rec.Header().Get("Content-Disposition"))
+			require.Equal(t, "image/svg+xml", rec.Header().Get("Content-Type"))
+			require.Equal(t, "no-store", rec.Header().Get("Cache-Control"))
+			require.Equal(t, "no-cache", rec.Header().Get("Pragma"))
+			require.Equal(t, "*", rec.Header().Get("Access-Control-Allow-Origin"))
+		})
+	}
+}
+
+func TestServer_TreatMissingRefererAsPhishing_DefaultBehavior(t *testing.T) {
+	logger := slog.New(slog.DiscardHandler)
+	reg := prometheus.NewRegistry()
+	m, err := metrics.NewMetrics(reg)
+	require.NoError(t, err)
+
+	// Test with default configuration (should treat missing referer as phishing by default)
+	cfg := config.Configuration{
+		AllowedOrigins:                []string{"example.com"},
+		TreatMissingRefererAsPhishing: true, // This is the default
+		Server: config.Server{
+			SecretKeyHeaderName:  "X-Secret-Key",
+			SecretKeyHeaderValue: "secret",
+		},
+	}
+
+	// Use built-in default images (no custom images)
+	handler, err := NewServer(
+		WithLogger(logger),
+		WithConfig(cfg),
+		WithMetrics(m),
+	)
+	require.NoError(t, err)
+
+	// Test request with no referer (should be treated as phishing by default)
+	req := httptest.NewRequest(http.MethodGet, "/image", nil)
+	rec := httptest.NewRecorder()
+	handler.ServeHTTP(rec, req)
+
+	require.Equal(t, http.StatusOK, rec.Code)
+	// The default images should contain some content (we don't check exact content since it's built-in)
+	require.NotEmpty(t, rec.Body.String())
+
+	// Test that a valid referer returns a different response
+	req2 := httptest.NewRequest(http.MethodGet, "/image", nil)
+	req2.Header.Set("Referer", "https://example.com/login")
+	rec2 := httptest.NewRecorder()
+	handler.ServeHTTP(rec2, req2)
+
+	require.Equal(t, http.StatusOK, rec2.Code)
+	require.NotEmpty(t, rec2.Body.String())
+
+	// The responses should be different (phishing vs OK)
+	require.NotEqual(t, rec.Body.String(), rec2.Body.String(),
+		"Missing referer should return different content than valid referer")
+}

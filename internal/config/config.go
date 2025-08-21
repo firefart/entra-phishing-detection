@@ -17,11 +17,12 @@ import (
 )
 
 type Configuration struct {
-	Server         Server        `koanf:"server"`
-	Logging        Logging       `koanf:"logging"`
-	Timeout        time.Duration `koanf:"timeout" validate:"required"`
-	Images         Images        `koanf:"images"`
-	AllowedOrigins []string      `koanf:"allowed_origins" validate:"required,dive,fqdn"`
+	Server                        Server        `koanf:"server"`
+	Logging                       Logging       `koanf:"logging"`
+	Timeout                       time.Duration `koanf:"timeout" validate:"required"`
+	Images                        Images        `koanf:"images"`
+	AllowedOrigins                []string      `koanf:"allowed_origins" validate:"required,dive,fqdn"`
+	TreatMissingRefererAsPhishing bool          `koanf:"treat_missing_referer_as_phishing"`
 }
 
 type Images struct {
@@ -62,8 +63,9 @@ var defaultConfig = Configuration{
 		GracefulTimeout:     10 * time.Second,
 		SecretKeyHeaderName: "X-Secret-Key-Header",
 	},
-	AllowedOrigins: []string{"login.microsoftonline.com", "login.microsoft.com", "autologon.microsoftazuread-sso.com", "device.login.microsoftonline.com"},
-	Timeout:        5 * time.Second,
+	AllowedOrigins:                []string{"login.microsoftonline.com", "login.microsoft.com", "autologon.microsoftazuread-sso.com", "device.login.microsoftonline.com"},
+	TreatMissingRefererAsPhishing: true,
+	Timeout:                       5 * time.Second,
 }
 
 // GetConfig loads the configuration from the specified file and environment variables.
