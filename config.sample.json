@@ -44,5 +44,5 @@
     "autologon.microsoftazuread-sso.com",
     "device.login.microsoftonline.com"
   ],
-  "treat_missing_referer_as_phishing": true
+  "treat_missing_referer_as_phishing": false
 }

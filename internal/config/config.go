@@ -64,7 +64,7 @@ var defaultConfig = Configuration{
 		SecretKeyHeaderName: "X-Secret-Key-Header",
 	},
 	AllowedOrigins:                []string{"login.microsoftonline.com", "login.microsoft.com", "autologon.microsoftazuread-sso.com", "device.login.microsoftonline.com"},
-	TreatMissingRefererAsPhishing: true,
+	TreatMissingRefererAsPhishing: false,
 	Timeout:                       5 * time.Second,
 }
 

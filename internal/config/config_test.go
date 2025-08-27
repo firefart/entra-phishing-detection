@@ -64,7 +64,7 @@ func TestGetConfigDefaults(t *testing.T) {
 	// Should use default values
 	require.Equal(t, 10*time.Second, c.Server.GracefulTimeout)
 	require.Equal(t, []string{"login.microsoftonline.com", "login.microsoft.com", "autologon.microsoftazuread-sso.com", "device.login.microsoftonline.com"}, c.AllowedOrigins)
-	require.True(t, c.TreatMissingRefererAsPhishing)
+	require.False(t, c.TreatMissingRefererAsPhishing)
 	require.Equal(t, 5*time.Second, c.Timeout)
 }
 
