@@ -13,6 +13,9 @@ spec:
       {{- include "entra-phishing-detection.selectorLabels" . | nindent 6 }}
   template:
     metadata:
+      annotations:
+        # used to restart pods when the configmap changes
+        checksum/config: {{ include (print $.Template.BasePath "/configmap.yaml") . | sha256sum }}
       labels:
         {{- include "entra-phishing-detection.labels" . | nindent 8 }}
     spec:
@@ -56,7 +59,7 @@ spec:
           {{- end }}
           volumeMounts:
             - name: log
-              mountPath: /var/log/entra
+              mountPath: "{{ .Values.logs.logfilePath}}"
             - name: config
               mountPath: /config
               readOnly: true
@@ -75,7 +78,7 @@ spec:
           {{- end }}
           volumeMounts:
             - name: log
-              mountPath: {{ .Values.pvc.logfilePath }}
+              mountPath: {{ .Values.logs.logfilePath }}
             - name: fluentbit-config
               mountPath: /config
         {{- end }}
@@ -86,10 +89,10 @@ spec:
             items:
               - key: "config.json"
                 path: "config.json"
-        {{- if .Values.fluentBit.enabled }}
         - name: log
-          persistentVolumeClaim:
-            claimName: {{ include "entra-phishing-detection.fullname" . }}
+          emptydir:
+            sizeLimit: {{ .Values.logs.fileSizeLimit }}
+        {{- if .Values.fluentBit.enabled }}
         - name: fluentbit-config
           configMap:
             name: {{ include "entra-phishing-detection.fullname" . }}
