@@ -81,16 +81,15 @@ resources:
   limits:
     cpu: 200m
     memory: 500Mi
-
-pvc:
-  size: 1Gi
-  logfilePath: /var/log/entra
-
 siem:
   host: siem.internal
   port: 514
   mode: udp
   syslogHostname: openshift
+
+logs:
+  fileSizeLimit: 500Mi
+  logfilePath: /var/log/entra
 
 # This section is for setting up autoscaling more information can be found here: https://kubernetes.io/docs/concepts/workloads/autoscaling/
 autoscaling:
@@ -116,3 +115,4 @@ configFile:
     - "login.microsoft.com"
     - "autologon.microsoftazuread-sso.com"
     - "device.login.microsoftonline.com"
+  treatMissingRefererAsPhishing: false

@@ -23,7 +23,7 @@ data:
       "logging": {
         "access_log": true,
         "json": true,
-        "log_file": "{{ .Values.pvc.logfilePath }}/log.log",
+        "log_file": "{{ .Values.logs.logfilePath }}/log.log",
         "rotate": {
           "max_size": 100,
           "max_age": 30,
@@ -32,7 +32,8 @@ data:
         }
       },
       "timeout": {{ .Values.configFile.timeout | toJson }},
-      "allowed_origins": {{ .Values.configFile.allowedOrigins | toJson }}
+      "allowed_origins": {{ .Values.configFile.allowedOrigins | toJson }},
+      "treat_missing_referer_as_phishing": {{ .Values.configFile.treatMissingRefererAsPhishing | toJson }}
     }
   {{- if .Values.fluentBit.enabled }}
   fluentbit.yml: |
@@ -53,7 +54,7 @@ data:
     pipeline:
       inputs:
         - name: tail
-          path: {{ .Values.pvc.logfilePath }}/log.log
+          path: {{ .Values.logs.logfilePath }}/log.log
           skip_long_lines: on
           skip_empty_lines: on
           tag: applogs
