@@ -1,0 +1,37 @@
+name: Merge main into dev
+
+on:
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: write
+
+jobs:
+  merge-main-into-dev:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # fetch full history to allow merging
+
+      - name: Configure Git
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+      - name: Fetch origin
+        run: git fetch origin
+
+      - name: Check out dev branch
+        run: git checkout dev
+
+      - name: Merge main into dev
+        run: |
+          git merge origin/main --no-ff -m "Merge main into dev [skip ci]" || exit 1
+
+      - name: Push changes
+        run: git push origin dev
