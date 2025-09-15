@@ -4,45 +4,45 @@
 # https://help.github.com/github/administering-a-repository/configuration-options-for-dependency-updates
 
 version: 2
+
+multi-ecosystem-groups:
+  updates:
+    target-branch: "dev"
+    schedule:
+      interval: "daily"
+
 updates:
   - package-ecosystem: "gomod"
     directory: "/"
-    target-branch: "dev"
-    schedule:
-      interval: "daily"
+    patterns: ["*"]
+    multi-ecosystem-group: "updates"
 
   - package-ecosystem: "github-actions"
     directory: "/"
-    target-branch: "dev"
-    schedule:
-      interval: "daily"
+    patterns: ["*"]
+    multi-ecosystem-group: "updates"
 
   - package-ecosystem: "docker"
     directory: "/"
-    target-branch: "dev"
-    schedule:
-      interval: "daily"
+    patterns: ["*"]
+    multi-ecosystem-group: "updates"
 
   - package-ecosystem: "docker-compose"
     directory: "/"
-    target-branch: "dev"
-    schedule:
-      interval: "daily"
+    patterns: ["*"]
+    multi-ecosystem-group: "updates"
 
   - package-ecosystem: "devcontainers"
     directory: "/"
-    target-branch: "dev"
-    schedule:
-      interval: "daily"
+    patterns: ["*"]
+    multi-ecosystem-group: "updates"
 
   - package-ecosystem: "helm"
     directory: "/helm-chart/"
-    target-branch: "dev"
-    schedule:
-      interval: "daily"
+    patterns: ["*"]
+    multi-ecosystem-group: "updates"
 
   - package-ecosystem: "docker"
     directory: "/helm-chart/"
-    target-branch: "dev"
-    schedule:
-      interval: "daily"
+    patterns: ["*"]
+    multi-ecosystem-group: "updates"
