@@ -64,7 +64,7 @@ This service supports multiple clients/organizations. Simply create a subdomain 
 
 ## Requirements
 
-- **Go 1.21+** (for building from source)
+- **Go 1.25+** (for building from source)
 - **Docker & Docker Compose** (for containerized deployment)
 - **Microsoft Entra ID tenant** with company branding feature access
 - **Reverse proxy** (Caddy, nginx, or similar) for production deployment
