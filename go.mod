@@ -5,7 +5,7 @@ go 1.25
 require (
 	github.com/charmbracelet/log v0.4.2
 	github.com/go-playground/validator/v10 v10.28.0
-	github.com/goforj/godump v1.6.0
+	github.com/goforj/godump v1.7.0
 	github.com/hashicorp/go-multierror v1.1.1
 	github.com/knadh/koanf/parsers/json v1.0.0
 	github.com/knadh/koanf/providers/env v1.1.0
@@ -73,6 +73,7 @@ require (
 	golang.org/x/mod v0.30.0 // indirect
 	golang.org/x/sync v0.18.0 // indirect
 	golang.org/x/sys v0.38.0 // indirect
+	golang.org/x/term v0.37.0 // indirect
 	golang.org/x/text v0.31.0 // indirect
 	golang.org/x/tools v0.39.0 // indirect
 	google.golang.org/protobuf v1.36.10 // indirect
