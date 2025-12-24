@@ -17,7 +17,7 @@ fluentBit:
   enabled: true
   image:
     repository: "fluent/fluent-bit"
-    tag: "4.2.1"
+    tag: "4.2.2"
     pullPolicy: Always
   resources:
     requests:
