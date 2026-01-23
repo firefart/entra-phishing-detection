@@ -6,8 +6,8 @@ github.com/JohannesKaufmann/dom v0.2.0 h1:1bragmEb19K8lHAqgFgqCpiPCFEZMTXzOIEjux
 github.com/JohannesKaufmann/dom v0.2.0/go.mod h1:57iSUl5RKric4bUkgos4zu6Xt5LMHUnw3TF1l5CbGZo=
 github.com/JohannesKaufmann/html-to-markdown/v2 v2.5.0 h1:mklaPbT4f/EiDr1Q+zPrEt9lgKAkVrIBtWf33d9GpVA=
 github.com/JohannesKaufmann/html-to-markdown/v2 v2.5.0/go.mod h1:D56Cl9r8M5i3UwAchE+LlLc5hPN3kJtdZNVJn06lSHU=
-github.com/air-verse/air v1.64.2 h1:H49xKRa4r3uFUycmCCA+JectVuZLNMPGdypLFpoHVcY=
-github.com/air-verse/air v1.64.2/go.mod h1:SOwv08NTvKextanAY819AK0FK6XzQO5/tC6s1R+rk8o=
+github.com/air-verse/air v1.64.3 h1:bCLjOVQUvHd7e8FjQjYNDQsSSeXa6/S2s7uYhAVogdk=
+github.com/air-verse/air v1.64.3/go.mod h1:SOwv08NTvKextanAY819AK0FK6XzQO5/tC6s1R+rk8o=
 github.com/alecthomas/chroma/v2 v2.21.1 h1:FaSDrp6N+3pphkNKU6HPCiYLgm8dbe5UXIXcoBhZSWA=
 github.com/alecthomas/chroma/v2 v2.21.1/go.mod h1:NqVhfBR0lte5Ouh3DcthuUCTUpDC9cxBOfyMbMQPs3o=
 github.com/aymanbagabas/go-osc52/v2 v2.0.1 h1:HwpRHbFMcZLEVr42D4p7XBqjyuxQH5SMiErDT4WkJ2k=
