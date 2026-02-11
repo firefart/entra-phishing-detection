@@ -44,7 +44,7 @@ func TestRecover(t *testing.T) {
 		require.Equal(t, "Internal Server Error\n", w.Body.String())
 		// Verify log output
 		require.NotEmpty(t, logOutput.String())
-		var logEntry map[string]interface{}
+		var logEntry map[string]any
 		err := json.Unmarshal(logOutput.Bytes(), &logEntry)
 		require.NoError(t, err)
 		require.Equal(t, "ERROR", logEntry["level"])

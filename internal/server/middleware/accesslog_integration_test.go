@@ -110,14 +110,14 @@ func TestAccessLogMiddlewareIntegration(t *testing.T) {
 
 		// Split log entries (there might be multiple log lines)
 		logLines := bytes.Split(logOutput.Bytes(), []byte("\n"))
-		var requestLog map[string]interface{}
+		var requestLog map[string]any
 
 		// Find the request completed log entry
 		for _, line := range logLines {
 			if len(line) == 0 {
 				continue
 			}
-			var logEntry map[string]interface{}
+			var logEntry map[string]any
 			err := json.Unmarshal(line, &logEntry)
 			if err != nil {
 				continue
@@ -141,7 +141,7 @@ func TestAccessLogMiddlewareIntegration(t *testing.T) {
 
 		// Check request headers
 		require.Contains(t, requestLog, "headers")
-		headers := requestLog["headers"].(map[string]interface{})
+		headers := requestLog["headers"].(map[string]any)
 		require.Equal(t, "Mozilla/5.0 Integration Test", headers["User-Agent"])
 		require.Equal(t, "https://phishing-site.com", headers["Referer"])
 		require.Equal(t, "192.168.1.100", headers["X-Real-Ip"])
@@ -217,13 +217,13 @@ func TestAccessLogMiddlewareIntegration(t *testing.T) {
 
 		// Parse log output
 		logLines := bytes.Split(logOutput.Bytes(), []byte("\n"))
-		var requestLog map[string]interface{}
+		var requestLog map[string]any
 
 		for _, line := range logLines {
 			if len(line) == 0 {
 				continue
 			}
-			var logEntry map[string]interface{}
+			var logEntry map[string]any
 			err := json.Unmarshal(line, &logEntry)
 			if err != nil {
 				continue
@@ -252,13 +252,13 @@ func TestAccessLogMiddlewareIntegration(t *testing.T) {
 
 		// Parse log output
 		logLines := bytes.Split(logOutput.Bytes(), []byte("\n"))
-		var requestLog map[string]interface{}
+		var requestLog map[string]any
 
 		for _, line := range logLines {
 			if len(line) == 0 {
 				continue
 			}
-			var logEntry map[string]interface{}
+			var logEntry map[string]any
 			err := json.Unmarshal(line, &logEntry)
 			if err != nil {
 				continue
@@ -509,12 +509,12 @@ func TestAccessLogBehaviorWithRouteGroups(t *testing.T) {
 
 		// Parse log output to find request completed entry
 		logLines := bytes.Split(logOutput.Bytes(), []byte("\n"))
-		var requestLog map[string]interface{}
+		var requestLog map[string]any
 		for _, line := range logLines {
 			if len(line) == 0 {
 				continue
 			}
-			var logEntry map[string]interface{}
+			var logEntry map[string]any
 			err := json.Unmarshal(line, &logEntry)
 			if err != nil {
 				continue
@@ -542,12 +542,12 @@ func TestAccessLogBehaviorWithRouteGroups(t *testing.T) {
 
 		// Parse log output to find request completed entry
 		logLines := bytes.Split(logOutput.Bytes(), []byte("\n"))
-		var requestLog map[string]interface{}
+		var requestLog map[string]any
 		for _, line := range logLines {
 			if len(line) == 0 {
 				continue
 			}
-			var logEntry map[string]interface{}
+			var logEntry map[string]any
 			err := json.Unmarshal(line, &logEntry)
 			if err != nil {
 				continue
@@ -576,12 +576,12 @@ func TestAccessLogBehaviorWithRouteGroups(t *testing.T) {
 
 		// Parse log output
 		logLines := bytes.Split(logOutput.Bytes(), []byte("\n"))
-		var requestLog map[string]interface{}
+		var requestLog map[string]any
 		for _, line := range logLines {
 			if len(line) == 0 {
 				continue
 			}
-			var logEntry map[string]interface{}
+			var logEntry map[string]any
 			err := json.Unmarshal(line, &logEntry)
 			if err != nil {
 				continue
@@ -609,12 +609,12 @@ func TestAccessLogBehaviorWithRouteGroups(t *testing.T) {
 
 		// Parse log output
 		logLines := bytes.Split(logOutput.Bytes(), []byte("\n"))
-		var requestLog map[string]interface{}
+		var requestLog map[string]any
 		for _, line := range logLines {
 			if len(line) == 0 {
 				continue
 			}
-			var logEntry map[string]interface{}
+			var logEntry map[string]any
 			err := json.Unmarshal(line, &logEntry)
 			if err != nil {
 				continue
@@ -647,7 +647,7 @@ func TestAccessLogBehaviorWithRouteGroups(t *testing.T) {
 			if len(line) == 0 {
 				continue
 			}
-			var logEntry map[string]interface{}
+			var logEntry map[string]any
 			err := json.Unmarshal(line, &logEntry)
 			if err != nil {
 				continue

@@ -585,9 +585,9 @@ func TestServer_TreatMissingRefererAsPhishing_Integration(t *testing.T) {
 	okContent := "test_ok_image"
 	phishingContent := "test_phishing_image"
 
-	err = os.WriteFile(okImagePath, []byte(okContent), 0644)
+	err = os.WriteFile(okImagePath, []byte(okContent), 0o644)
 	require.NoError(t, err)
-	err = os.WriteFile(phishingImagePath, []byte(phishingContent), 0644)
+	err = os.WriteFile(phishingImagePath, []byte(phishingContent), 0o644)
 	require.NoError(t, err)
 
 	testCases := []struct {

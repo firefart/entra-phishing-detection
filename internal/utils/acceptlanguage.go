@@ -44,8 +44,8 @@ func ParseAcceptLanguage(acceptLanguage string) []LanguageTag {
 
 			// Parse quality value
 			qPart := strings.TrimSpace(parts[1])
-			if strings.HasPrefix(qPart, "q=") {
-				qValue := strings.TrimPrefix(qPart, "q=")
+			if after, ok := strings.CutPrefix(qPart, "q="); ok {
+				qValue := after
 				if parsedQ, err := strconv.ParseFloat(qValue, 64); err == nil {
 					// Ensure quality is between 0.0 and 1.0
 					if parsedQ >= 0.0 && parsedQ <= 1.0 {

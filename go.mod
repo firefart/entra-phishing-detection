@@ -1,6 +1,6 @@
 module github.com/firefart/entra-phishing-detection
 
-go 1.25
+go 1.26
 
 require (
 	github.com/charmbracelet/log v0.4.2
