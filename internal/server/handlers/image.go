@@ -150,6 +150,7 @@ func (h *ImageHandler) Handler(w http.ResponseWriter, r *http.Request) error {
 	// https://http.dev/pragma
 	w.Header().Set("Pragma", "no-cache")
 	w.Header().Set("Access-Control-Allow-Origin", "*")
+	w.Header().Set("Access-Control-Allow-Private-Network", "true")
 
 	referer := r.Header.Get("Referer")
 	if referer == "" {
