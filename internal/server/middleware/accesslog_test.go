@@ -45,7 +45,7 @@ func TestAccessLog(t *testing.T) {
 		// Verify log output
 		require.NotEmpty(t, logOutput.String())
 
-		var logEntry map[string]interface{}
+		var logEntry map[string]any
 		err = json.Unmarshal(logOutput.Bytes(), &logEntry)
 		require.NoError(t, err)
 
@@ -60,7 +60,7 @@ func TestAccessLog(t *testing.T) {
 		require.Equal(t, float64(0), logEntry["req_len"])  // nolint:testifylint
 		// Check request headers group
 		require.Contains(t, logEntry, "headers")
-		headers := logEntry["headers"].(map[string]interface{})
+		headers := logEntry["headers"].(map[string]any)
 		require.Equal(t, "test-agent", headers["User-Agent"])
 		require.Equal(t, "custom-value", headers["X-Custom-Header"])
 		require.Equal(t, "https://example.com", headers["Referer"])
@@ -87,7 +87,7 @@ func TestAccessLog(t *testing.T) {
 
 		require.Equal(t, http.StatusNotFound, w.Code)
 
-		var logEntry map[string]interface{}
+		var logEntry map[string]any
 		err = json.Unmarshal(logOutput.Bytes(), &logEntry)
 		require.NoError(t, err)
 
@@ -118,7 +118,7 @@ func TestAccessLog(t *testing.T) {
 		w := httptest.NewRecorder()
 		handler.ServeHTTP(w, req)
 
-		var logEntry map[string]interface{}
+		var logEntry map[string]any
 		err = json.Unmarshal(logOutput.Bytes(), &logEntry)
 		require.NoError(t, err)
 
@@ -146,11 +146,11 @@ func TestAccessLog(t *testing.T) {
 		w := httptest.NewRecorder()
 		handler.ServeHTTP(w, req)
 
-		var logEntry map[string]interface{}
+		var logEntry map[string]any
 		err = json.Unmarshal(logOutput.Bytes(), &logEntry)
 		require.NoError(t, err)
 
-		headers := logEntry["headers"].(map[string]interface{})
+		headers := logEntry["headers"].(map[string]any)
 		require.Equal(t, "text/html, application/json", headers["Accept"])
 	})
 
@@ -176,7 +176,7 @@ func TestAccessLog(t *testing.T) {
 		handler.ServeHTTP(w, req)
 		actualDuration := time.Since(start)
 
-		var logEntry map[string]interface{}
+		var logEntry map[string]any
 		err = json.Unmarshal(logOutput.Bytes(), &logEntry)
 		require.NoError(t, err)
 
@@ -222,7 +222,7 @@ func TestAccessLog(t *testing.T) {
 
 		require.Equal(t, http.StatusOK, w.Code)
 
-		var logEntry map[string]interface{}
+		var logEntry map[string]any
 		err = json.Unmarshal(logOutput.Bytes(), &logEntry)
 		require.NoError(t, err)
 
