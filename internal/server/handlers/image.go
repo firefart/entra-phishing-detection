@@ -120,7 +120,7 @@ func (h *ImageHandler) phishingAttempt(w http.ResponseWriter, r *http.Request, r
 	h.Metrics.ImageHits.WithLabelValues(r.Host, language, reason).Inc()
 
 	w.WriteHeader(http.StatusOK)
-	_, err := w.Write(image)
+	_, err := w.Write(image) // nolint: gosec
 	if err != nil {
 		return fmt.Errorf("failed to write phishing image response: %w", err)
 	}
@@ -133,7 +133,7 @@ func (h *ImageHandler) safeURL(w http.ResponseWriter, r *http.Request) error {
 	h.Metrics.ImageHits.WithLabelValues(r.Host, language, reasonAllowedReferer).Inc()
 
 	w.WriteHeader(http.StatusOK)
-	_, err := w.Write(image)
+	_, err := w.Write(image) // nolint: gosec
 	if err != nil {
 		return fmt.Errorf("failed to write ok image response: %w", err)
 	}

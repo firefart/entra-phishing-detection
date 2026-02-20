@@ -57,6 +57,7 @@ type Logging struct {
 	} `koanf:"rotate"`
 }
 
+// nolint: gosec
 var defaultConfig = Configuration{
 	Server: Server{
 		Listen:              "127.0.0.1:8000",
