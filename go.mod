@@ -3,7 +3,7 @@ module github.com/firefart/entra-phishing-detection
 go 1.26
 
 require (
-	github.com/charmbracelet/log v0.4.2
+	github.com/charmbracelet/log v1.0.0
 	github.com/go-playground/validator/v10 v10.30.1
 	github.com/goforj/godump v1.9.1
 	github.com/hashicorp/go-multierror v1.1.1
