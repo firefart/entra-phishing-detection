@@ -12,8 +12,8 @@ func NewHealthHandler() *HealthHandler {
 }
 
 func (h *HealthHandler) Handler(w http.ResponseWriter, _ *http.Request) error {
-	w.WriteHeader(http.StatusOK)
 	w.Header().Set("Content-Type", "text/plain")
+	w.WriteHeader(http.StatusOK)
 	fmt.Fprint(w, "OK")
 	return nil
 }
