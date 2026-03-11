@@ -47,7 +47,7 @@ func (r *Router) Use(mw ...func(http.Handler) http.Handler) {
 }
 
 func (r *Router) Group(fn func(r *Router)) {
-	subRouter := &Router{routeChain: slices.Clone(r.routeChain), isSubRouter: true, mux: r.mux}
+	subRouter := &Router{routeChain: slices.Clone(r.routeChain), isSubRouter: true, mux: r.mux, errorHandler: r.errorHandler}
 	fn(subRouter)
 }
 

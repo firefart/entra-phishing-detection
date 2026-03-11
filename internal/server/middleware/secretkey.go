@@ -1,6 +1,7 @@
 package middleware
 
 import (
+	"crypto/subtle"
 	"fmt"
 	"log/slog"
 	"net/http"
@@ -48,7 +49,7 @@ func SecretKeyHeader(config SecretKeyHeaderConfig) func(next http.Handler) http.
 				return
 			}
 
-			if headerVal == config.SecretKeyHeaderValue {
+			if subtle.ConstantTimeCompare([]byte(headerVal), []byte(config.SecretKeyHeaderValue)) == 1 {
 				next.ServeHTTP(w, r)
 				return
 			}

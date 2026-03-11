@@ -18,8 +18,8 @@ func (h *VersionHandler) Handler(w http.ResponseWriter, _ *http.Request) error {
 	if !ok {
 		return errors.New("unable to determine version information")
 	}
-	w.WriteHeader(http.StatusOK)
 	w.Header().Set("Content-Type", "text/plain")
+	w.WriteHeader(http.StatusOK)
 	fmt.Fprint(w, buildInfo.String())
 	return nil
 }

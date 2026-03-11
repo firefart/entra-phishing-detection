@@ -85,12 +85,6 @@ func main() {
 			log.Fatalf("Error creating log directory: %v\n", err)
 		}
 
-		logFile, err := os.OpenFile(configuration.Logging.LogFile, os.O_RDWR|os.O_CREATE|os.O_APPEND, 0o666)
-		if err != nil {
-			log.Fatalf("Error opening log file: %v\n", err)
-		}
-		defer logFile.Close()
-
 		var writer io.Writer
 		if configuration.Logging.Rotate.Enabled {
 			logRotator := &lumberjack.Logger{
@@ -110,6 +104,11 @@ func main() {
 			}
 			writer = logRotator
 		} else {
+			logFile, err := os.OpenFile(configuration.Logging.LogFile, os.O_RDWR|os.O_CREATE|os.O_APPEND, 0o666)
+			if err != nil {
+				log.Fatalf("Error opening log file: %v\n", err)
+			}
+			defer logFile.Close()
 			writer = logFile
 		}
 		logger = newLogger(cli.debugMode, configuration.Logging.JSON, writer)

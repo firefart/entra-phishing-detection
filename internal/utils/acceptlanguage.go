@@ -75,14 +75,10 @@ func ParseAcceptLanguage(acceptLanguage string) []LanguageTag {
 		}
 	}
 
-	// Sort by quality value in descending order (highest quality first)
-	sort.Slice(languageTags, func(i, j int) bool {
-		// First sort by quality (descending)
-		if languageTags[i].Quality != languageTags[j].Quality {
-			return languageTags[i].Quality > languageTags[j].Quality
-		}
-		// If quality is the same, maintain original order (stable sort)
-		return i < j
+	// Sort by quality value in descending order (highest quality first).
+	// SliceStable preserves the original order for equal quality values.
+	sort.SliceStable(languageTags, func(i, j int) bool {
+		return languageTags[i].Quality > languageTags[j].Quality
 	})
 
 	return languageTags
