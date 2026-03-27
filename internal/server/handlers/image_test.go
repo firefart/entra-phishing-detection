@@ -4,13 +4,11 @@ import (
 	"log/slog"
 	"net/http"
 	"net/http/httptest"
-	"strings"
 	"testing"
 
 	"github.com/firefart/entra-phishing-detection/internal/config"
 	"github.com/firefart/entra-phishing-detection/internal/metrics"
 	"github.com/firefart/entra-phishing-detection/internal/server/handlers"
-	"github.com/firefart/entra-phishing-detection/internal/utils"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/stretchr/testify/require"
 )
@@ -442,40 +440,18 @@ func TestImageHandler_GetLanguageAndImage(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
+			// No referer → phishing attempt (TreatMissingRefererAsPhishing: true)
 			req := httptest.NewRequest(http.MethodGet, "/", nil)
 			if tc.acceptLanguage != "" {
 				req.Header.Set("Accept-Language", tc.acceptLanguage)
 			}
 
-			// Use reflection to access the private method
-			// Since Go doesn't have reflection-based method calling for unexported methods,
-			// we'll test this through the public Handler method and check metrics
-			// But first, let's test the method directly by creating a test helper
-			actualLang, actualImage := testGetLanguageAndImage(imageHandler, req)
-
-			require.Equal(t, tc.expectedLang, actualLang, "Language should match expected")
-			require.Equal(t, tc.expectedImage, actualImage, "Image should match expected")
+			rec := httptest.NewRecorder()
+			err := imageHandler.Handler(rec, req)
+			require.NoError(t, err)
+			require.Equal(t, tc.expectedImage, rec.Body.Bytes(), "Image should match expected")
 		})
 	}
-}
-
-// testGetLanguageAndImage is a helper function to test the private getLanguageAndImage method
-// This is a workaround since we can't directly call private methods in Go
-func testGetLanguageAndImage(_ *handlers.ImageHandler, r *http.Request) (string, []byte) {
-	// We'll use the same logic as the private method for testing
-	languages := utils.GetLanguages(r.Header.Get("Accept-Language"))
-	if len(languages) > 0 {
-		for _, lang := range languages {
-			lang = strings.ToLower(strings.Split(lang, "-")[0])
-			switch lang {
-			case "de":
-				return lang, []byte("imagePhishingDE")
-			case "en":
-				return lang, []byte("imagePhishingEN")
-			}
-		}
-	}
-	return "en", []byte("imagePhishingEN")
 }
 
 func TestImageHandler_AcceptLanguageIntegration(t *testing.T) {

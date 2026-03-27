@@ -2,6 +2,7 @@ package config
 
 import (
 	"os"
+	"strings"
 	"testing"
 	"time"
 
@@ -381,8 +382,18 @@ func TestEnvironmentVariableTransformation(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			// Clear any existing environment variables
+			// Save and restore the full environment so other tests are not affected.
+			savedEnv := os.Environ()
 			os.Clearenv()
+			t.Cleanup(func() {
+				os.Clearenv()
+				for _, kv := range savedEnv {
+					parts := strings.SplitN(kv, "=", 2)
+					if len(parts) == 2 {
+						os.Setenv(parts[0], parts[1]) //nolint:errcheck,usetesting
+					}
+				}
+			})
 
 			// Set the test environment variable and required fields
 			t.Setenv(tt.envVar, tt.envValue)
