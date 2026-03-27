@@ -3,6 +3,7 @@ package config
 import (
 	"errors"
 	"fmt"
+	"regexp"
 	"strings"
 	"time"
 
@@ -21,7 +22,7 @@ type Configuration struct {
 	Logging                       Logging       `koanf:"logging"`
 	Timeout                       time.Duration `koanf:"timeout" validate:"required"`
 	Images                        Images        `koanf:"images"`
-	AllowedOrigins                []string      `koanf:"allowed_origins" validate:"required,dive,fqdn"`
+	AllowedOrigins                []string      `koanf:"allowed_origins" validate:"required,dive,fqdn|fqdn_wildcard"`
 	TreatMissingRefererAsPhishing bool          `koanf:"treat_missing_referer_as_phishing"`
 }
 
@@ -57,6 +58,18 @@ type Logging struct {
 	} `koanf:"rotate"`
 }
 
+var wildcardRegex = regexp.MustCompile(`^\*\.([a-zA-Z0-9-]+\.)+[a-zA-Z]{2,}$`)
+
+func fqdnWildcard(fl validator.FieldLevel) bool {
+	val := fl.Field().String()
+
+	if val == "" {
+		return false
+	}
+
+	return wildcardRegex.MatchString(val)
+}
+
 // nolint: gosec
 var defaultConfig = Configuration{
 	Server: Server{
@@ -73,6 +86,7 @@ var defaultConfig = Configuration{
 // if the filename is empty, only the default configuration and environment variables are used.
 func GetConfig(f string) (Configuration, error) {
 	validate := validator.New(validator.WithRequiredStructEnabled())
+	validate.RegisterValidation("fqdn_wildcard", fqdnWildcard)
 
 	k := koanf.NewWithConf(koanf.Conf{
 		Delim: ".",

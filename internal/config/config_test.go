@@ -104,7 +104,7 @@ func TestGetConfigValidationErrors(t *testing.T) {
 				},
 				"allowed_origins": ["invalid-domain"]
 			}`,
-			err: "AllowedOrigins[0]' failed on the 'fqdn' tag",
+			err: "AllowedOrigins[0]' failed on the 'fqdn|fqdn_wildcard' tag",
 		},
 	}
 
@@ -173,7 +173,7 @@ func TestGetConfigWithHostHeaders(t *testing.T) {
 			"secret_key_header_value": "SECRET",
 			"host_headers": ["X-Forwarded-Host", "X-Original-Host"]
 		},
-		"allowed_origins": ["example.com"]
+		"allowed_origins": ["example.com", "*.example.com"]
 	}`
 
 	f, err := os.CreateTemp(t.TempDir(), "config")
