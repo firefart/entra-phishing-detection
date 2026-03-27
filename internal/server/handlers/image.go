@@ -5,6 +5,7 @@ import (
 	"log/slog"
 	"net/http"
 	"net/url"
+	"path/filepath"
 	"slices"
 	"strings"
 
@@ -165,8 +166,16 @@ func (h *ImageHandler) Handler(w http.ResponseWriter, r *http.Request) error {
 	if err != nil {
 		return h.phishingAttempt(w, r, reasonInvalidReferer)
 	}
-	if slices.Contains(h.AllowedOrigins, parsed.Hostname()) {
-		return h.safeURL(w, r)
+
+	for _, x := range h.AllowedOrigins {
+		match, err := filepath.Match(x, parsed.Hostname())
+		if err != nil {
+			return fmt.Errorf("err on pattern %s with hostname %s: %w", x, parsed.Hostname(), err)
+		}
+		if match {
+			return h.safeURL(w, r)
+		}
 	}
+
 	return h.phishingAttempt(w, r, reasonRefererNotWhitelisted)
 }

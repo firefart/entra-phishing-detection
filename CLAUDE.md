@@ -22,14 +22,23 @@ task update      # Update all dependencies
 ```
 
 Run a single test package:
+
 ```bash
 go test -race ./internal/server/handlers/...
 ```
 
 Run a specific test:
+
 ```bash
 go test -race -run TestImageHandler ./internal/server/handlers/...
 ```
+
+## Instructions
+
+- When making changes, always make sure the changes are covered by test cases. If test cases are missing, add them.
+- Run `task test` after every set of changes and fix all reported issues before considering the work done.
+- Run `task lint` after every set of changes and fix all reported issues before considering the work done. The CI also runs golangci-lint on a schedule.
+- When adding or updating code, make sure `CLAUDE.md` is up to date with the new or added features.
 
 ## Architecture
 
@@ -65,7 +74,10 @@ go test -race -run TestImageHandler ./internal/server/handlers/...
 ### Configuration
 
 Configuration is a JSON file with optional env var overrides. See `config.sample.json` for the full structure. Key fields:
-- `allowed_origins` — list of hostnames whose `Referer` is considered legitimate
+
+- `allowed_origins` — list of hostnames (supports `filepath.Match` glob patterns, e.g. `*.microsoftonline.com`) whose `Referer` is considered legitimate
 - `treat_missing_referer_as_phishing` — whether to treat missing `Referer` as an attack
 - `server.ip_header` / `server.host_headers` — reverse proxy header names for real IP/host
-- Per-language image overrides via file paths in config
+- Per-language image overrides via file paths in config; image language keys must be lowercase primary codes (no dashes), and `"en"` is always required
+
+**Env var overrides** use the `ENTRA_` prefix. Key mapping: single `_` becomes `.` (nesting separator), double `__` becomes `_` (for keys containing underscores). Example: `ENTRA_SERVER__LISTEN` → `server.listen`.

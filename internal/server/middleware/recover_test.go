@@ -70,6 +70,23 @@ func TestRecover(t *testing.T) {
 		require.NotEmpty(t, logOutput.String())
 	})
 
+	t.Run("re-panics http.ErrAbortHandler", func(t *testing.T) {
+		var logOutput bytes.Buffer
+		logger := slog.New(slog.NewJSONHandler(&logOutput, nil))
+		middleware := Recover(logger)
+		nextHandler := http.HandlerFunc(func(_ http.ResponseWriter, _ *http.Request) {
+			panic(http.ErrAbortHandler)
+		})
+		handler := middleware(nextHandler)
+		req := httptest.NewRequest(http.MethodGet, "/abort", nil)
+		w := httptest.NewRecorder()
+		require.Panics(t, func() {
+			handler.ServeHTTP(w, req)
+		})
+		// ErrAbortHandler should be re-panicked, not logged
+		require.Empty(t, logOutput.String())
+	})
+
 	t.Run("middleware chain continues after recovery", func(t *testing.T) {
 		var logOutput bytes.Buffer
 		logger := slog.New(slog.NewJSONHandler(&logOutput, nil))

@@ -15,18 +15,21 @@ This project implements a simple but effective Entra ID phishing protection mech
 The protection leverages Microsoft Entra ID's company branding feature to provide custom CSS styling and background images. The background image is served by this web service and changes dynamically based on the request parameters and origin validation.
 
 In a legitimate login flow:
+
 1. Users visit the official Microsoft login page at `login.microsoftonline.com` or `login.microsoft.com` when using a passkey (or some other weird looking domains)
 2. The login page requests the background image from your service
 3. The `Referer` header contains the legitimate Microsoft domain
 4. Your service serves a normal (transparent) background image
 
 In a phishing attack:
+
 1. Users visit a fake login page hosted by attackers
 2. The fake page still requests the background image from your service
 3. The `Referer` header contains the attacker's fake domain
 4. Your service detects the suspicious origin and serves a warning image
 
 **Important Security Note:** This mechanism can be bypassed in targeted campaigns where attackers specifically craft their requests. You should implement additional monitoring using the provided access logs and metrics, such as:
+
 - Successful logins without corresponding requests to this service
 - Requests originating from suspicious IP ranges
 - Unusual request patterns or frequencies
@@ -79,6 +82,7 @@ The company branding CSS feature has limitations as it's parsed by JavaScript an
 ### 1. Prerequisites
 
 Ensure you have:
+
 - ✅ Microsoft Entra ID tenant with admin access
 - ✅ Domain name for hosting the service
 - ✅ SSL/TLS certificate for your domain
@@ -88,6 +92,7 @@ Ensure you have:
 ### 2. Initial Setup
 
 1. **Clone and configure**:
+
    ```bash
    git clone https://github.com/firefart/entra-phishing-detection.git
    cd entra-phishing-detection
@@ -98,6 +103,7 @@ Ensure you have:
    ```
 
 2. **Generate random paths** (important for security):
+
    ```bash
    # Generate UUIDs for your paths
    echo "Image path: $(uuidgen | tr '[:upper:]' '[:lower:]')"
@@ -106,6 +112,7 @@ Ensure you have:
    ```
 
 3. **Edit `config.json`**:
+
    ```json
    {
      "server": {
@@ -134,6 +141,7 @@ Ensure you have:
    ```
 
 4. **Create `.env` file**:
+
    ```bash
    cat > .env << EOF
    WEB_LISTEN=127.0.0.1:8000
@@ -144,11 +152,12 @@ Ensure you have:
    EOF
    ```
 
-4. **cloudflared configuration**
+5. **cloudflared configuration**
 
 Point your cloudflared config to `127.0.0.1:8000` and be sure to disable every caching on this domain to see all requests.
 
-5. **Start the service**:
+1. **Start the service**:
+
    ```bash
    docker-compose up -d
    ```
@@ -157,6 +166,7 @@ Point your cloudflared config to `127.0.0.1:8000` and be sure to disable every c
 
 1. **Navigate to Entra ID** → **Company branding** → **Customize** [docs](https://learn.microsoft.com/en-us/entra/fundamentals/how-to-customize-branding)
 2. **Upload custom CSS** with the following content:
+
    ```css
    .ext-sign-in-box {
      background-color: white;
@@ -166,19 +176,22 @@ Point your cloudflared config to `127.0.0.1:8000` and be sure to disable every c
      background-repeat: no-repeat;
    }
    ```
+
   **Important:** Replace `https://your-domain.com/your-image-path` with your actual domain and the image path configured in your `config.json` file.
 
-3. **Save and publish** the branding configuration
+1. **Save and publish** the branding configuration
 
 ### 4. Testing
 
 1. **Test legitimate access**:
+
    ```bash
    curl -H "Referer: https://login.microsoftonline.com/" \
         https://your-domain.com/your-image-path
    ```
 
 2. **Test phishing detection**:
+
    ```bash
    curl -H "Referer: https://fake-phishing-site.com/" \
         -H "Accept-Language: en" \
@@ -186,6 +199,7 @@ Point your cloudflared config to `127.0.0.1:8000` and be sure to disable every c
    ```
 
 3. **Check metrics**:
+
    ```bash
    curl http://127.0.0.1:8001/metrics
    ```
@@ -228,7 +242,7 @@ Use `--help` to display all available flags and their default values:
 | `images.ok`                         | `ENTRA_IMAGES_OK_<LANG>`                      | Map of language codes to file paths for normal (non-phishing) images. Use two-letter ISO language codes (e.g., `ENTRA_IMAGES_OK_EN`, `ENTRA_IMAGES_OK_DE`). If unset, a default 1x1 transparent SVG is used                |
 | `images.phishing`                   | `ENTRA_IMAGES_PHISHING_<LANG>`                | Map of language codes to file paths for phishing warning images. Similar to `images.ok` but for warning images. You can configure only one type and use defaults for the other                                             |
 | `timeout`                           | `ENTRA_TIMEOUT`                               | General request timeout for HTTP operations (e.g., `5s`)                                                                                                                                                                   |
-| `allowed_origins`                   | `ENTRA_ALLOWED__ORIGINS`                      | Array of hostnames considered legitimate. Defaults to `["login.microsoftonline.com", "login.microsoft.com"]`. Add custom domains if using ADFS or other identity providers                                                 |
+| `allowed_origins`                   | `ENTRA_ALLOWED__ORIGINS`                      | Array of hostnames considered legitimate. Defaults to `["login.microsoftonline.com", "login.microsoft.com"]`. Add custom domains if using ADFS or other identity providers. Also supports wildcards like `*.domain.com`.   |
 | `treat_missing_referer_as_phishing` | `ENTRA_TREAT__MISSING__REFERER__AS__PHISHING` | Treat a missing referer header as a phishing attempt and show the image. If set to false, a missing referer will be treated as a valid login, if set to true a missing referer will show the warning image. Default: false |
 
 ### Environment Variables for Docker Compose
@@ -298,7 +312,8 @@ Here's a complete example configuration for a production deployment:
     "autologon.microsoftazuread-sso.com",
     "device.login.microsoftonline.com",
     "adfs.company.com",
-    "login.company.com"
+    "login.company.com",
+    "*.login.company.com"
   ],
   "treat_missing_referer_as_phishing": true
 }
@@ -318,6 +333,7 @@ Here's a complete example configuration for a production deployment:
 ### Metrics
 
 The application exposes Prometheus metrics on the configured metrics port. Available metrics include:
+
 - Request counts, response times, request and response size when access log is enabled, otherwise caddy metrics are served
 - Phishing detection events
 - Client origin distributions
@@ -326,6 +342,7 @@ The application exposes Prometheus metrics on the configured metrics port. Avail
 ### Logging
 
 The application provides structured logging with configurable formats:
+
 - **JSON format**: For integration with log aggregators (ELK stack, Splunk, etc.)
 - **Text format**: Human-readable for development and debugging
 - **Access logs**: Optional detailed request logging
@@ -334,6 +351,7 @@ The application provides structured logging with configurable formats:
 ### Health Checks
 
 A health check endpoint is available at the configured path. This endpoint:
+
 - Validates application readiness
 - Checks dependency availability
 - Provides status information for load balancers

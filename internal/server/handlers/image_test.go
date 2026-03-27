@@ -4,13 +4,11 @@ import (
 	"log/slog"
 	"net/http"
 	"net/http/httptest"
-	"strings"
 	"testing"
 
 	"github.com/firefart/entra-phishing-detection/internal/config"
 	"github.com/firefart/entra-phishing-detection/internal/metrics"
 	"github.com/firefart/entra-phishing-detection/internal/server/handlers"
-	"github.com/firefart/entra-phishing-detection/internal/utils"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/stretchr/testify/require"
 )
@@ -66,6 +64,121 @@ func TestImage(t *testing.T) {
 	// test with correct referer
 	req = httptest.NewRequest(http.MethodGet, "/", nil)
 	req.Header.Set("Referer", "https://loginsite.internal/xxxx")
+	rec = httptest.NewRecorder()
+	require.NoError(t, imageHandler.Handler(rec, req))
+	require.Equal(t, http.StatusOK, rec.Code)
+	require.Equal(t, "imageOK", rec.Body.String())
+
+	// test with no referer and German Accept-Language
+	req = httptest.NewRequest(http.MethodGet, "/", nil)
+	req.Header.Set("Accept-Language", "de")
+	rec = httptest.NewRecorder()
+	require.NoError(t, imageHandler.Handler(rec, req))
+	require.Equal(t, http.StatusOK, rec.Code)
+	require.Equal(t, "imagePhishingDE", rec.Body.String())
+
+	// test with no referer and English Accept-Language
+	req = httptest.NewRequest(http.MethodGet, "/", nil)
+	req.Header.Set("Accept-Language", "en")
+	rec = httptest.NewRecorder()
+	require.NoError(t, imageHandler.Handler(rec, req))
+	require.Equal(t, http.StatusOK, rec.Code)
+	require.Equal(t, "imagePhishingEN", rec.Body.String())
+
+	// test with wrong referer and German Accept-Language
+	req = httptest.NewRequest(http.MethodGet, "/", nil)
+	req.Header.Set("Referer", "https://example.com")
+	req.Header.Set("Accept-Language", "de-DE,de;q=0.9,en;q=0.8")
+	rec = httptest.NewRecorder()
+	require.NoError(t, imageHandler.Handler(rec, req))
+	require.Equal(t, http.StatusOK, rec.Code)
+	require.Equal(t, "imagePhishingDE", rec.Body.String())
+
+	// test with correct referer and German Accept-Language (should return OK image)
+	req = httptest.NewRequest(http.MethodGet, "/", nil)
+	req.Header.Set("Referer", "https://loginsite.internal/login")
+	req.Header.Set("Accept-Language", "de")
+	rec = httptest.NewRecorder()
+	require.NoError(t, imageHandler.Handler(rec, req))
+	require.Equal(t, http.StatusOK, rec.Code)
+	require.Equal(t, "imageOK", rec.Body.String())
+
+	// test with unsupported language falls back to English default
+	req = httptest.NewRequest(http.MethodGet, "/", nil)
+	req.Header.Set("Accept-Language", "fr,es,it")
+	rec = httptest.NewRecorder()
+	require.NoError(t, imageHandler.Handler(rec, req))
+	require.Equal(t, http.StatusOK, rec.Code)
+	require.Equal(t, "imagePhishingEN", rec.Body.String())
+}
+
+func TestImageGlob(t *testing.T) {
+	configuration := config.Configuration{
+		Server: config.Server{
+			SecretKeyHeaderName:  "X-Secret-Key",
+			SecretKeyHeaderValue: "SECRET",
+		},
+		AllowedOrigins: []string{"loginsite.internal", "*.loginsite.internal"},
+	}
+	logger := slog.New(slog.DiscardHandler)
+	m, err := metrics.NewMetrics(prometheus.NewRegistry())
+	require.NoError(t, err)
+	imageHandler := handlers.NewImageHandler(handlers.ImageHandlerOptions{
+		AllowedOrigins:                configuration.AllowedOrigins,
+		Logger:                        logger,
+		Metrics:                       m,
+		ImagesOK:                      map[string][]byte{"en": []byte("imageOK")},
+		ImagesPhishing:                map[string][]byte{"en": []byte("imagePhishingEN"), "de": []byte("imagePhishingDE")},
+		TreatMissingRefererAsPhishing: true,
+	})
+	req := httptest.NewRequest(http.MethodGet, "/", nil)
+	rec := httptest.NewRecorder()
+
+	// test with no referer
+	require.NoError(t, imageHandler.Handler(rec, req))
+	require.Equal(t, http.StatusOK, rec.Code)
+	require.Equal(t, `inline; filename="image.svg"`, rec.Header().Get("Content-Disposition"))
+	require.Equal(t, "image/svg+xml", rec.Header().Get("Content-Type"))
+	require.Equal(t, "no-store", rec.Header().Get("Cache-Control"))
+	require.Equal(t, "no-cache", rec.Header().Get("Pragma"))
+	require.Equal(t, "*", rec.Header().Get("Access-Control-Allow-Origin"))
+	require.Equal(t, "imagePhishingEN", rec.Body.String())
+
+	// test with wrong referer
+	req = httptest.NewRequest(http.MethodGet, "/", nil)
+	req.Header.Set("Referer", "https://example.com")
+	rec = httptest.NewRecorder()
+	require.NoError(t, imageHandler.Handler(rec, req))
+	require.Equal(t, http.StatusOK, rec.Code)
+	require.Equal(t, "imagePhishingEN", rec.Body.String())
+
+	// test with invalid referer
+	req = httptest.NewRequest(http.MethodGet, "/", nil)
+	req.Header.Set("Referer", ")_*(()&&^%$#$%)")
+	rec = httptest.NewRecorder()
+	require.NoError(t, imageHandler.Handler(rec, req))
+	require.Equal(t, http.StatusOK, rec.Code)
+	require.Equal(t, "imagePhishingEN", rec.Body.String())
+
+	// test with correct referer
+	req = httptest.NewRequest(http.MethodGet, "/", nil)
+	req.Header.Set("Referer", "https://loginsite.internal/xxxx")
+	rec = httptest.NewRecorder()
+	require.NoError(t, imageHandler.Handler(rec, req))
+	require.Equal(t, http.StatusOK, rec.Code)
+	require.Equal(t, "imageOK", rec.Body.String())
+
+	// test with correct referer subdomain
+	req = httptest.NewRequest(http.MethodGet, "/", nil)
+	req.Header.Set("Referer", "https://subdomain.loginsite.internal/xxxx")
+	rec = httptest.NewRecorder()
+	require.NoError(t, imageHandler.Handler(rec, req))
+	require.Equal(t, http.StatusOK, rec.Code)
+	require.Equal(t, "imageOK", rec.Body.String())
+
+	// test with correct referer multiple subdomain
+	req = httptest.NewRequest(http.MethodGet, "/", nil)
+	req.Header.Set("Referer", "https://subdomain1.subdomain2.loginsite.internal/xxxx")
 	rec = httptest.NewRecorder()
 	require.NoError(t, imageHandler.Handler(rec, req))
 	require.Equal(t, http.StatusOK, rec.Code)
@@ -327,40 +440,18 @@ func TestImageHandler_GetLanguageAndImage(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
+			// No referer → phishing attempt (TreatMissingRefererAsPhishing: true)
 			req := httptest.NewRequest(http.MethodGet, "/", nil)
 			if tc.acceptLanguage != "" {
 				req.Header.Set("Accept-Language", tc.acceptLanguage)
 			}
 
-			// Use reflection to access the private method
-			// Since Go doesn't have reflection-based method calling for unexported methods,
-			// we'll test this through the public Handler method and check metrics
-			// But first, let's test the method directly by creating a test helper
-			actualLang, actualImage := testGetLanguageAndImage(imageHandler, req)
-
-			require.Equal(t, tc.expectedLang, actualLang, "Language should match expected")
-			require.Equal(t, tc.expectedImage, actualImage, "Image should match expected")
+			rec := httptest.NewRecorder()
+			err := imageHandler.Handler(rec, req)
+			require.NoError(t, err)
+			require.Equal(t, tc.expectedImage, rec.Body.Bytes(), "Image should match expected")
 		})
 	}
-}
-
-// testGetLanguageAndImage is a helper function to test the private getLanguageAndImage method
-// This is a workaround since we can't directly call private methods in Go
-func testGetLanguageAndImage(_ *handlers.ImageHandler, r *http.Request) (string, []byte) {
-	// We'll use the same logic as the private method for testing
-	languages := utils.GetLanguages(r.Header.Get("Accept-Language"))
-	if len(languages) > 0 {
-		for _, lang := range languages {
-			lang = strings.ToLower(strings.Split(lang, "-")[0])
-			switch lang {
-			case "de":
-				return lang, []byte("imagePhishingDE")
-			case "en":
-				return lang, []byte("imagePhishingEN")
-			}
-		}
-	}
-	return "en", []byte("imagePhishingEN")
 }
 
 func TestImageHandler_AcceptLanguageIntegration(t *testing.T) {

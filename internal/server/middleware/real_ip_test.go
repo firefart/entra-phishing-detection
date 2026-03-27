@@ -11,7 +11,8 @@ import (
 
 func TestRealIP(t *testing.T) {
 	next := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if r.Context().Value(ContextKeyIP).(string) != "some-ip" {
+		ip, ok := r.Context().Value(ContextKeyIP).(string)
+		if !ok || ip != "some-ip" {
 			t.Error("IP not set correctly in context")
 			return
 		}
