@@ -3,6 +3,7 @@ package config
 import (
 	"errors"
 	"fmt"
+	"regexp"
 	"strings"
 	"time"
 
@@ -21,7 +22,7 @@ type Configuration struct {
 	Logging                       Logging       `koanf:"logging"`
 	Timeout                       time.Duration `koanf:"timeout" validate:"required"`
 	Images                        Images        `koanf:"images"`
-	AllowedOrigins                []string      `koanf:"allowed_origins" validate:"required,dive,fqdn"`
+	AllowedOrigins                []string      `koanf:"allowed_origins" validate:"required,dive,fqdn|fqdn_wildcard"`
 	TreatMissingRefererAsPhishing bool          `koanf:"treat_missing_referer_as_phishing"`
 }
 
@@ -57,6 +58,18 @@ type Logging struct {
 	} `koanf:"rotate"`
 }
 
+var wildcardRegex = regexp.MustCompile(`^\*\.([a-zA-Z0-9-]+\.)+[a-zA-Z]{2,}$`)
+
+func fqdnWildcard(fl validator.FieldLevel) bool {
+	val := fl.Field().String()
+
+	if val == "" {
+		return false
+	}
+
+	return wildcardRegex.MatchString(val)
+}
+
 // nolint: gosec
 var defaultConfig = Configuration{
 	Server: Server{
@@ -73,19 +86,22 @@ var defaultConfig = Configuration{
 // if the filename is empty, only the default configuration and environment variables are used.
 func GetConfig(f string) (Configuration, error) {
 	validate := validator.New(validator.WithRequiredStructEnabled())
+	if err := validate.RegisterValidation("fqdn_wildcard", fqdnWildcard); err != nil {
+		return Configuration{}, fmt.Errorf("failed to register fqdn_wildcard validation: %w", err)
+	}
 
 	k := koanf.NewWithConf(koanf.Conf{
 		Delim: ".",
 	})
 
 	if err := k.Load(structs.Provider(defaultConfig, "koanf"), nil); err != nil {
-		return Configuration{}, err
+		return Configuration{}, fmt.Errorf("failed to load default configuration: %w", err)
 	}
 
 	// only load the json provider if a file is specified
 	if f != "" {
 		if err := k.Load(file.Provider(f), json.Parser()); err != nil {
-			return Configuration{}, err
+			return Configuration{}, fmt.Errorf("failed to load configuration file: %w", err)
 		}
 	}
 
@@ -100,12 +116,12 @@ func GetConfig(f string) (Configuration, error) {
 		s = strings.ReplaceAll(s, "..", "_")
 		return s
 	}), nil); err != nil {
-		return Configuration{}, err
+		return Configuration{}, fmt.Errorf("failed to load environment variables: %w", err)
 	}
 
 	var config Configuration
 	if err := k.Unmarshal("", &config); err != nil {
-		return Configuration{}, err
+		return Configuration{}, fmt.Errorf("failed to unmarshal configuration: %w", err)
 	}
 
 	if err := validate.Struct(config); err != nil {
