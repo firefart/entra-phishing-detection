@@ -21,7 +21,7 @@ require (
 
 require (
 	dario.cat/mergo v1.0.2 // indirect
-	github.com/air-verse/air v1.65.0 // indirect
+	github.com/air-verse/air v1.65.1 // indirect
 	github.com/andybalholm/brotli v1.2.1 // indirect
 	github.com/aymanbagabas/go-osc52/v2 v2.0.1 // indirect
 	github.com/beorn7/perks v1.0.1 // indirect
