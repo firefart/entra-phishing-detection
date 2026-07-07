@@ -51,7 +51,7 @@ daisyUI 5 provides class names for common UI components, semantic color names an
 9. Suggested - when designing, don't add a custom font unless it's necessary
 10. Don't add `bg-base-100 text-base-content` to body unless it's necessary
 11. For design decisions, use Refactoring UI book best practices
-12. Always use the default variant of daisyUI components unless the user asked for a specific variant or color
+12. Always use the default variant of daisyUI components unless the user asked for a specific variant or color. For example when you need a button, do not use `btn btn-primary`, prefer `btn`, unless the user asked for a specific variant.
 
 daisyUI 5 class names are one of the following categories. These type names are only for reference and are not used in the actual code
 - `component`: the required component class
@@ -142,6 +142,7 @@ root scrollbar gutter is excluded. `daisy-` prefix is used for all daisyUI class
 8. Using Tailwind CSS color names for text colors should be avoided because Tailwind CSS color `text-gray-800` on `bg-base-100` would be unreadable on a dark theme - because on dark theme, `bg-base-100` is a dark color
 9. `*-content` colors should have a good contrast compared to their associated colors
 10. Use `base-*` colors for majority of the page. Use the default variant for all elements. Use `primary` color once only, for the most important element on the page.
+11. Rare use case when using Tailwind CSS color names (for example `text-red-500`) is allowed instead of using a daisyUI color name (for example `text-error`): when a specific content must be indepecent from the theme. For example if a svg icon or a chart graph must use a specific color, no matter what are our brand colors or theme colors.
 
 ### daisyUI custom theme with custom colors
 A CSS file with Tailwind CSS, daisyUI and a custom daisyUI theme looks like this:
@@ -185,7 +186,7 @@ A CSS file with Tailwind CSS, daisyUI and a custom daisyUI theme looks like this
 
   --border: 1px; /* border size. Value must be 1px unless we intentionally want thicker borders. In so it can be 1.5px or 2px. If we intentionally want thinner borders, it can be 0.5px */
 
-  --depth: 1; /* only 0 or 1 – Adds a shadow and subtle 3D depth effect to components */
+  --depth: 1; /* only 0 or 1 - Adds a shadow and subtle 3D depth effect to components */
   --noise: 0; /* only 0 or 1 - Adds a subtle noise (grain) effect to components */
 }
 ```
@@ -466,7 +467,7 @@ Cards are used to group and display content
 #### Rules
 - {MODIFIER} is optional and can have one of the modifier class names and one of the size class names
 - `<figure>` and `<div class="card-body">` are optional
-- can use `sm:card-horizontal` for responsive layouts
+- can use `sm:card-side` for responsive layouts
 - If image is placed after `card-body`, the image will be placed at the bottom
 
 
@@ -652,7 +653,7 @@ where content is a list of buttons:
 #### Rules
 - {MODIFIER} is optional and can have one of the size class names
 - To make a button active, add `dock-active` class to the button
-- add `<meta name="viewport" content="viewport-fit=cover">` is required for responsivness of the dock in iOS
+- add `<meta name="viewport" content="viewport-fit=cover">` is required for responsiveness of the dock in iOS
 
 
 ### drawer
@@ -708,7 +709,7 @@ Example: This sidebar is always visible on large screen, can be toggled on small
 </div>
 ```
 
-Example: This sidebar is always visible. When it's close we only see iocns, when it's open we see icons and text
+Example: This sidebar is always visible. When it's close we only see icons, when it's open we see icons and text
 ```html
 <div class="drawer lg:drawer-open">
   <input id="my-drawer-4" type="checkbox" class="drawer-toggle" />
@@ -723,14 +724,14 @@ Example: This sidebar is always visible. When it's close we only see iocns, when
         <!-- list item -->
         <li>
           <button class="is-drawer-close:tooltip is-drawer-close:tooltip-right" data-tip="Homepage">
-            🏠
+            {ICON_HERE}
             <span class="is-drawer-close:hidden">Homepage</span>
           </button>
         </li>
         <!-- list item -->
         <li>
           <button class="is-drawer-close:tooltip is-drawer-close:tooltip-right" data-tip="Settings">
-            🔧
+            {ICON_HERE}
             <span class="is-drawer-close:hidden">Settings</span>
           </button>
         </li>
@@ -738,7 +739,7 @@ Example: This sidebar is always visible. When it's close we only see iocns, when
       <!-- button to open/close drawer -->
       <div class="m-2 is-drawer-close:tooltip is-drawer-close:tooltip-right" data-tip="Open">
         <label for="my-drawer-4" class="btn btn-ghost btn-circle drawer-button is-drawer-open:rotate-y-180">
-          🔄
+          {ICON_HERE}
         </label>
       </div>
     </div>
@@ -767,7 +768,14 @@ Dropdown can open a menu or any other element when the button is clicked
 - modifier: `dropdown-hover`, `dropdown-open`, `dropdown-close`
 
 #### Syntax
-Using details and summary
+
+Using popover API (recommended)
+```html
+<button popovertarget="{id}" style="anchor-name:--{anchor}">{button}</button>
+<ul class="dropdown" popover id="{id}" style="position-anchor:--{anchor}">{CONTENT}</ul>
+```
+
+Using details and summary (only opens/closes on click)
 ```html
 <details class="dropdown">
   <summary>Button</summary>
@@ -775,13 +783,7 @@ Using details and summary
 </details>
 ```
 
-Using popover API
-```html
-<button popovertarget="{id}" style="anchor-name:--{anchor}">{button}</button>
-<ul class="dropdown" popover id="{id}" style="position-anchor:--{anchor}">{CONTENT}</ul>
-```
-
-Using CSS focus
+Using CSS focus (not recommended)
 ```html
 <div class="dropdown">
   <div tabindex="0" role="button">Button</div>
@@ -794,7 +796,7 @@ Using CSS focus
 - replace `{id}` and `{anchor}` with a unique name
 - For CSS focus dropdowns, use `tabindex="0"` and `role="button"` on the button
 - The content can be any HTML element (not just `<ul>`)
-- For popover API method, we dont use `dropdown-content`. Only button and a `dropdown`
+- For popover API method, we don't use `dropdown-content`. Only button and a `dropdown`
 
 
 ### fab
@@ -808,7 +810,7 @@ FAB (Floating Action Button) stays in the bottom corner of screen. It includes a
 - modifier: `fab-flower`
 
 #### Syntax
-A single FAB in the corder of screen
+A single FAB in the corner of screen
 ```html
 <div class="fab">
   <button class="btn btn-lg btn-circle">{IconOriginal}</button>
@@ -845,7 +847,7 @@ FAB with close button. When FAB is open, the original button is replaced with a 
 ```html
 <div class="fab">
   <div tabindex="0" role="button" class="btn btn-lg btn-circle btn-primary">{IconOriginal}</div>
-  <div class="fab-close">Close <span class="btn btn-circle btn-lg btn-error">✕</span></div>
+  <div class="fab-close">Close <span class="btn btn-circle btn-lg btn-error">×</span></div>
   <div>{Label1}<button class="btn btn-lg btn-circle">{Icon1}</button></div>
   <div>{Label2}<button class="btn btn-lg btn-circle">{Icon2}</button></div>
   <div>{Label3}<button class="btn btn-lg btn-circle">{Icon3}</button></div>
@@ -1054,7 +1056,7 @@ Only use non-interactive content inside the `hover-3d` wrapper. If you want to m
 
 
 ### hover-gallery
-Hover Gallery is container of images. The first image is visible be default and when we hover it horizontally, other images show up. Hover Gallery is useful for product cards in ecommerce sites, portfoilios or in image galleries. Hover Gallery can include up to 10 images.
+Hover Gallery is container of images. The first image is visible by default and when we hover it horizontally, other images show up. Hover Gallery is useful for product cards in ecommerce sites, portfolios or in image galleries. Hover Gallery can include up to 10 images.
 
 [hover-gallery docs](https://daisyui.com/components/hover-gallery/)
 
@@ -1471,13 +1473,54 @@ Modal is used to show a dialog or a box when you click a button
 - placement: `modal-top`, `modal-middle`, `modal-bottom`, `modal-start`, `modal-end`
 
 #### Syntax
-Using HTML dialog element
+Using HTML dialog element (recommended)
 ```html
 <button onclick="my_modal.showModal()">Open modal</button>
 <dialog id="my_modal" class="modal">
   <div class="modal-box">{CONTENT}</div>
   <form method="dialog" class="modal-backdrop"><button>close</button></form>
 </dialog>
+```
+If we want it to close when clicking outside:
+```html
+<button class="btn" onclick="my_modal.showModal()">open modal</button>
+<dialog id="my_modal" class="modal">
+  <div class="modal-box">
+    <h3 class="text-lg font-bold">Hello!</h3>
+    <p class="py-4">Press ESC key or click outside to close</p>
+  </div>
+  <form method="dialog" class="modal-backdrop">
+    <button>close</button>
+  </form>
+</dialog>
+```
+
+
+Using popover API (recommended only if we DON'T want to trap the keyboard navigation in the modal)
+```html
+<button popovertarget="my_modal" class="btn">Open modal</button>
+<div class="modal" popover id="my_modal">
+  <div class="modal-box">
+    {CONTENT}
+    <div class="modal-action">
+      <button popovertarget="my_modal" popovertargetaction="hide">close</button>
+    </div>
+  </div>
+</div>
+```
+If we want it to close when clicking outside:
+```html
+<button class="btn" popovertarget="my_modal">Open</button>
+
+<div class="modal" id="my_modal" popover>
+  <div class="modal-box">
+    <h3 class="font-bold text-lg">Hello!</h3>
+    <p class="py-4">Press ESC key or click the button below to close</p>
+  </div>
+  <div class="modal-backdrop">
+    <button popovertarget="my_modal" popovertargetaction="hide">close</button>
+  </div>
+</div>
 ```
 
 Using checkbox (legacy)
@@ -1500,7 +1543,6 @@ Using anchor links (legacy)
 
 #### Rules
 - {MODIFIER} is optional and can have one of the modifier/placement class names
-- Add `tabindex="0"` to make modal focusable
 - Use unique IDs for each modal
 - For HTML dialog element modals, add `<form method="dialog">` for closing the modal with submit
 
@@ -1609,7 +1651,7 @@ Radial progress can be used to show the progress of a task or to show the passin
 
 #### Rules
 - The `--value` CSS variable and text must be a number between 0 and 100
-- you need to add `aria-valuenow="{value}"`, `aria-valuenow={value}` so screen readers can properly read value and also show that its a progress element to them
+- you need to add `aria-valuenow={value}` and `role="progressbar"` so screen readers can properly read value and also show that its a progress element to them
 - Use `div` instead of progress because browsers can't show text inside progress tag
 - Use `--size` for setting size (default 5rem) and `--thickness` to set how thick the indicator is
 
@@ -1793,7 +1835,7 @@ Status is a really small icon to visually show the current status of an element,
 
 #### Rules
 - {MODIFIER} is optional and can have one of the color/size class names
-- This component does not render anything visible
+- This compnent renders a small visual indicator to draw attention
 
 
 ### steps
@@ -1865,6 +1907,7 @@ Tabs can be used to show a list of links in a tabbed format
 - Component: `tabs`
 - Part: `tab`, `tab-content`
 - Style: `tabs-box`, `tabs-border`, `tabs-lift`
+- Size: `tabs-xs`, `tabs-sm`, `tabs-md`, `tabs-lg`, `tabs-xl`
 - Modifier: `tab-active`, `tab-disabled`
 - Placement: `tabs-top`, `tabs-bottom`
 
@@ -1925,7 +1968,7 @@ Table can be used to show a list of data in a table format
 ### text-rotate
 Text Rotate can show up to 6 lines of text, one at a time, with a an infinite loop animation. Duration is 10 seconds by default. The animation will pause on hover.
 
-[textarea docs](https://daisyui.com/components/text-rotate/)
+[text-rotate docs](https://daisyui.com/components/text-rotate/)
 
 #### Class Names:
 - Component: `text-rotate`
@@ -1974,12 +2017,12 @@ Custom line height in case you have a tall font or need more vertical spacing be
 ```html
 <span class="text-rotate max-md:text-3xl text-7xl font-title leading-[2]">
   <span class="justify-items-center">
-    <span>📐 DESIGN</span>
-    <span>💻 DEVELOP</span>
-    <span>🌎 DEPLOY</span>
-    <span>🌱 SCALE</span>
-    <span>🔧 MAINTAIN</span>
-    <span>🔁 REPEAT</span>
+    <span>DESIGN</span>
+    <span>DEVELOP</span>
+    <span>DEPLOY</span>
+    <span>SCALE</span>
+    <span>MAINTAIN</span>
+    <span>REPEAT</span>
   </span>
 </span>
 ```
