@@ -13,7 +13,7 @@ require (
 	github.com/knadh/koanf/providers/structs v1.0.0
 	github.com/knadh/koanf/v2 v2.3.5
 	github.com/mattn/go-isatty v0.0.23
-	github.com/prometheus/client_golang v1.23.2
+	github.com/prometheus/client_golang v1.24.0
 	github.com/prometheus/client_model v0.6.2
 	github.com/stretchr/testify v1.11.1
 	gopkg.in/natefinch/lumberjack.v2 v2.2.1
@@ -21,7 +21,7 @@ require (
 
 require (
 	dario.cat/mergo v1.0.2 // indirect
-	github.com/air-verse/air v1.66.0 // indirect
+	github.com/air-verse/air v1.67.1 // indirect
 	github.com/andybalholm/brotli v1.2.2 // indirect
 	github.com/aymanbagabas/go-osc52/v2 v2.0.1 // indirect
 	github.com/beorn7/perks v1.0.1 // indirect
