@@ -68,15 +68,15 @@ require (
 	github.com/spf13/afero v1.15.0 // indirect
 	github.com/spf13/cast v1.10.0 // indirect
 	github.com/tdewolff/parse/v2 v2.8.15 // indirect
-	github.com/xo/terminfo v0.0.0-20220910002029-abceb7e1c41e // indirect
+	github.com/xo/terminfo v1.0.0 // indirect
 	golang.org/x/crypto v0.54.0 // indirect
-	golang.org/x/exp v0.0.0-20260727155853-b88d891fe743 // indirect
-	golang.org/x/mod v0.38.0 // indirect
+	golang.org/x/exp v0.0.0-20260810151157-a8b543ca52da // indirect
+	golang.org/x/mod v0.39.0 // indirect
 	golang.org/x/sync v0.22.0 // indirect
 	golang.org/x/sys v0.47.0 // indirect
 	golang.org/x/text v0.40.0 // indirect
 	golang.org/x/tools v0.48.0 // indirect
-	google.golang.org/protobuf v1.36.11 // indirect
+	google.golang.org/protobuf v1.36.12 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 	mvdan.cc/gofumpt v0.11.0 // indirect
 )
