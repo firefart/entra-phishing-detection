@@ -5,13 +5,13 @@ go 1.27.0
 require (
 	github.com/charmbracelet/log v1.0.0
 	github.com/go-playground/validator/v10 v10.30.5
-	github.com/goforj/godump v1.9.1
+	github.com/goforj/godump v1.10.0
 	github.com/hashicorp/go-multierror v1.1.1
 	github.com/knadh/koanf/parsers/json v1.0.1
 	github.com/knadh/koanf/providers/env v1.1.0
 	github.com/knadh/koanf/providers/file v1.2.1
 	github.com/knadh/koanf/providers/structs v1.0.1
-	github.com/knadh/koanf/v2 v2.3.8
+	github.com/knadh/koanf/v2 v2.4.0
 	github.com/mattn/go-isatty v0.0.24
 	github.com/prometheus/client_golang v1.25.0
 	github.com/prometheus/client_model v0.6.3
@@ -40,7 +40,7 @@ require (
 	github.com/fatih/color v1.19.0 // indirect
 	github.com/fatih/structs v1.1.0 // indirect
 	github.com/fsnotify/fsnotify v1.10.1 // indirect
-	github.com/gabriel-vasile/mimetype v1.4.15 // indirect
+	github.com/gabriel-vasile/mimetype v1.4.16 // indirect
 	github.com/go-logfmt/logfmt v0.6.1 // indirect
 	github.com/go-playground/locales v0.14.2 // indirect
 	github.com/go-playground/universal-translator v0.18.2 // indirect
