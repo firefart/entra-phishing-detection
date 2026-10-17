@@ -18,4 +18,5 @@ jobs:
           dockerfile: Dockerfile
           # DL3007: Using latest is prone to errors if the image will ever update. Pin the version explicitly to a release tag
           # DL3018: Pin versions in apk add. Instead of `apk add <package>` use `apk add <package>=<version>`
-          ignore: DL3007,DL3018
+          # DL3066: Non-numeric user-id may not be resolvable by host system
+          ignore: DL3007,DL3018,DL3066
