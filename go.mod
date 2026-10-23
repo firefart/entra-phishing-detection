@@ -62,7 +62,7 @@ require (
 	github.com/pelletier/go-toml v1.9.5 // indirect
 	github.com/pelletier/go-toml/v2 v2.4.3 // indirect
 	github.com/prometheus/common v0.72.1 // indirect
-	github.com/prometheus/procfs v0.22.0 // indirect
+	github.com/prometheus/procfs v0.23.0 // indirect
 	github.com/rivo/uniseg v0.4.7 // indirect
 	github.com/spf13/afero v1.15.0 // indirect
 	github.com/spf13/cast v1.10.0 // indirect
