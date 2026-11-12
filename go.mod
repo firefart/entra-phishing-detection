@@ -62,7 +62,7 @@ require (
 	github.com/pandatix/go-abnf v0.5.5 // indirect
 	github.com/pelletier/go-toml v1.9.5 // indirect
 	github.com/pelletier/go-toml/v2 v2.4.3 // indirect
-	github.com/prometheus/common v0.73.1 // indirect
+	github.com/prometheus/common v0.74.0 // indirect
 	github.com/prometheus/procfs v0.23.0 // indirect
 	github.com/rivo/uniseg v0.4.7 // indirect
 	github.com/spf13/afero v1.15.0 // indirect
@@ -71,7 +71,7 @@ require (
 	github.com/xo/terminfo v1.3.1 // indirect
 	go.yaml.in/yaml/v3 v3.0.5 // indirect
 	golang.org/x/crypto v0.59.0 // indirect
-	golang.org/x/exp v0.0.0-20261109185158-a52e3aef5920 // indirect
+	golang.org/x/exp v0.0.0-20261112173441-d10d3b464990 // indirect
 	golang.org/x/mod v0.43.0 // indirect
 	golang.org/x/sync v0.25.0 // indirect
 	golang.org/x/sys v0.50.0 // indirect
